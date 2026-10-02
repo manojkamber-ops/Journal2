@@ -60,7 +60,7 @@ export function AboutView() {
             {[
               ['Print ISSN', '2520-8438'],
               ['Electronic ISSN', '2520-8446'],
-              ['Publisher', 'Springer Nature'],
+              ['Indexing', 'Indexed in: Scopus (2018–2026)'],
               ['Founded', '2018'],
               ['Frequency', 'Quarterly (March, June, September, December)'],
               ['Source type', 'Journal (Scopus) — covered from Vol. 1 (2018) to Vol. 9 (2026)'],
@@ -142,7 +142,7 @@ export function AboutView() {
               { year: '2021', text: 'All back content digitized with DOIs; journal joins DOAJ.' },
               { year: '2023', text: 'APC waiver program introduced for low-income countries.' },
               { year: '2024', text: 'Accepted for Web of Science ESCI; CiteScore reaches 3.9 (Q2).' },
-              { year: '2026', text: 'CiteScore 4.6; 148,000 annual downloads; publishing partnership continues with Springer Nature.' },
+              { year: '2026', text: 'CiteScore 4.6; 148,000 annual downloads; Scopus coverage continues uninterrupted through Volume 9.' },
             ].map(t => (
               <li key={t.year} className="relative pb-6 last:pb-0">
                 <span className="absolute -left-[31px] top-1 flex h-3 w-3 items-center justify-center rounded-full border-2 border-crimson bg-white" aria-hidden />
@@ -161,7 +161,7 @@ export function AboutView() {
               { icon: ScrollText, title: 'Publication ethics', body: 'The journal follows COPE guidelines; misconduct leads to rejection, retraction, and notification of institutions.' },
               { icon: ShieldCheck, title: 'Peer review integrity', body: 'Double-anonymous review with at least two independent referees; editorial decisions are appealable within 30 days.' },
               { icon: Globe2, title: 'Open access & licensing', body: 'Gold open access under CC BY 4.0. Authors retain copyright; no embargo periods apply to any content.' },
-              { icon: Landmark, title: 'Ownership & management', body: 'The journal title and editorial process are managed by the IJCS Editorial Office; distribution by Springer Nature.' },
+              { icon: Landmark, title: 'Ownership & management', body: 'The journal title and editorial process are managed by the IJCS Editorial Office, with worldwide discoverability ensured through Scopus, Web of Science, and DOAJ indexing.' },
               { icon: BookOpen, title: 'Archiving', body: 'CLOCKSS and PORTICO preservation; self-archiving of accepted versions is permitted without embargo.' },
               { icon: FileText, title: 'Authorship', body: 'Authorship follows ICMJE criteria; AI tools cannot be authors; all listed authors must approve the final version.' },
             ].map(p => (

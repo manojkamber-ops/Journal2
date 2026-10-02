@@ -5,11 +5,19 @@
 // a reusable author pool, editorial board, and announcements.
 // ─────────────────────────────────────────────────────────────────────────────
 import { PrismaClient } from '@prisma/client';
+import type { PaperBlock } from '../src/lib/journal-types';
 import {
   IR_MALE, IR_FEMALE, IR_FAMILY, IR_INSTITUTIONS, INTERNATIONAL, SECTIONS,
   KEYWORDS, TASKS, METHODS, DATASETS, REF_VENUES, REF_FIRST, REF_LAST,
   ANNOUNCEMENTS, BOARD, SPECIAL_ISSUES, JOURNAL,
 } from './seed-data';
+import { generateFullPaper, estimatePdfPages } from './paper-text';
+import { buildPaperPdf } from '../src/lib/pdf-render';
+import { fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8 } from './flagship/index';
+import type { FlagshipPaper } from './flagship/index';
+
+// Hand-written complete papers placed in the latest published issue (Vol. 9, No. 3).
+const FLAGSHIPS: FlagshipPaper[] = [fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8];
 
 const db = new PrismaClient();
 
@@ -194,15 +202,29 @@ function makeTitle(section: string, type: string): { title: string } {
 }
 function cap(s: string): string { return s.charAt(0).toUpperCase() + s.slice(1); }
 
+// ── Shared generation context (kept consistent between abstract and full text) ─
+interface Ctx { task: string; method: string; method2: string; dataset: string; acc: number; f1: number; impr: number }
+function makeCtx(section: string): Ctx {
+  return {
+    task: pick(TASKS[section]),
+    method: pick(METHODS[section]),
+    method2: pick(METHODS[section]),
+    dataset: pick(DATASETS),
+    acc: +(87 + R() * 11.5).toFixed(1),
+    f1: +(0.84 + R() * 0.13).toFixed(2),
+    impr: rint(2, 9),
+  };
+}
+
 // ── Abstract generation ──────────────────────────────────────────────────────
-function makeAbstract(section: string, title: string, type: string): string {
-  const task = pick(TASKS[section]);
-  const method = pick(METHODS[section]);
-  const dataset = pick(DATASETS);
-  const acc = (87 + R() * 11.5).toFixed(1);
-  const f1 = (0.84 + R() * 0.13).toFixed(2);
-  const impr = rint(2, 9);
-  const secondMethod = pick(METHODS[section]);
+function makeAbstract(ctx: Ctx, section: string, type: string): string {
+  const task = ctx.task;
+  const method = ctx.method;
+  const dataset = ctx.dataset;
+  const acc = ctx.acc.toFixed(1);
+  const f1 = ctx.f1.toFixed(2);
+  const impr = ctx.impr;
+  const secondMethod = ctx.method2;
   const intro = type === 'Review Article'
     ? `${cap(task)} has attracted growing attention over the past decade, yet the literature remains fragmented across datasets, evaluation protocols, and modeling assumptions.`
     : `${cap(task)} is a critical problem in modern computing systems, where decisions must be made accurately and under tight resource constraints.`;
@@ -270,7 +292,9 @@ interface GenArticle {
   volume: number; issue: number; year: number; month: string; pages: string; type: string;
   section: string; receivedDate: string; acceptedDate: string; publishedDate: string;
   citations: number; downloads: number; pdfPages: number; references: string[];
+  nRefs: number; fullText: PaperBlock[]; flagship: boolean;
   correspondingEmail: string; authorIds: { id: string; corresponding: boolean }[];
+  authorsData: PoolAuthor[];
 }
 
 async function main() {
@@ -307,6 +331,7 @@ async function main() {
   // ── Articles ──
   const articles: GenArticle[] = [];
   let articleNo = 0;
+  let flagshipIdx = 0;
 
   for (const plan of plans) {
     const special = SPECIAL_ISSUES[`${plan.volume}-${plan.issue}`];
@@ -327,14 +352,19 @@ async function main() {
     const pubDateBase = iso(plan.year, MONTH_NUM[plan.month], plan.status === 'upcoming' ? 15 : rint(20, 30));
 
     for (let k = 0; k < plan.articles; k++) {
-      const section = issueSections[k];
-      const type = weightedPick(
+      // Hand-written complete flagship papers fill the latest published issue (V9 I3).
+      const fp: FlagshipPaper | null = (plan.volume === 9 && plan.issue === 3 && flagshipIdx < FLAGSHIPS.length)
+        ? FLAGSHIPS[flagshipIdx++] : null;
+      let section = issueSections[k];
+      const type = fp ? fp.type : weightedPick(
         ['Research Article', 'Review Article', 'Short Communication', 'Technical Note'],
         plan.status === 'upcoming' ? [72, 14, 8, 6] : [68, 13, 9, 10],
       );
+      if (fp) section = fp.section;
 
-      const { title } = makeTitle(section, type);
-      const abstractText = makeAbstract(section, title, type);
+      const title = fp ? fp.title : makeTitle(section, type).title;
+      const ctx = makeCtx(section);
+      const abstractText = fp ? fp.abstractText : makeAbstract(ctx, section, type);
 
       // authors 2–5
       const nA = weightedPick([2, 3, 4, 5], [24, 40, 26, 10]);
@@ -352,9 +382,23 @@ async function main() {
       articleNo++;
       const id = `IJCS-2026-${String(articleNo).padStart(4, '0')}`;
       const doi = `${JOURNAL.prefix}.${plan.year}.${String(rint(100000, 999999))}.${String(rint(100, 999))}`;
-      const keywords = shufflePick(KEYWORDS[section], 5);
+      const keywords = fp ? fp.keywords : shufflePick(KEYWORDS[section], 5);
 
-      const pdfPages = type === 'Review Article' ? rint(18, 26) : type === 'Short Communication' ? rint(5, 8) : type === 'Technical Note' ? rint(7, 10) : rint(10, 17);
+      // reference count fixed here so the full-text citations stay in range
+      const nRefs = fp ? fp.references.length : (type === 'Review Article' ? rint(26, 34) : rint(15, 24));
+
+      // Complete paper body (6-13 PDF pages).
+      const fullText: PaperBlock[] = fp
+        ? fp.blocks
+        : generateFullPaper(
+            {
+              task: ctx.task, method: ctx.method, method2: ctx.method2, dataset: ctx.dataset,
+              type, section, title, acc: ctx.acc, f1: ctx.f1, impr: ctx.impr,
+              nRefs, keywords,
+            },
+            R,
+          );
+      const pdfPages = 0; // exact page count computed in the render pass below
 
       let pages = '';
       let publishedDate = '';
@@ -362,9 +406,6 @@ async function main() {
       let citations = 0, downloads = 0;
 
       if (plan.status === 'published') {
-        const start = pageCursor;
-        pageCursor += pdfPages;
-        pages = `${start}–${pageCursor - 1}`;
         publishedDate = pubDateBase;
         const mN = MONTH_NUM[plan.month];
         // received 4-8 months before publication
@@ -376,7 +417,6 @@ async function main() {
         accepted = iso(aY, aM, rint(2, 26));
         citations = citationFor(plan.year, type);
         downloads = downloadsFor(plan.year, citations);
-        publishedSoFar.push({ title, year: plan.year, volume: plan.volume, issue: plan.issue, pages, authors: chosen.map(a => `${a.familyName}, ${a.givenName.charAt(0)}.`) });
       }
 
       articles.push({
@@ -387,18 +427,39 @@ async function main() {
         section,
         receivedDate: received, acceptedDate: accepted, publishedDate,
         citations, downloads, pdfPages,
-        references: [],
+        references: fp ? [...fp.references] : [],
+        nRefs,
+        fullText,
+        flagship: !!fp,
         correspondingEmail: corr.email,
         authorIds: chosen.map((a, i) => ({ id: a.id, corresponding: i === corrIdx })),
+        authorsData: chosen,
       });
     }
   }
 
+  // ── Provisional pagination (needed so self-citations can quote page ranges) ──
+  {
+    let key = '', pc = 1;
+    for (const art of articles) {
+      if (`${art.volume}|${art.issue}` !== key) { key = `${art.volume}|${art.issue}`; pc = 1; }
+      if (art.status === 'published') {
+        const est = estimatePdfPages(art.fullText, art.type, art.nRefs);
+        const start = pc;
+        pc += est;
+        art.pages = `${start}–${pc - 1}`;
+        publishedSoFar.push({ title: art.title, year: art.year, volume: art.volume, issue: art.issue, pages: art.pages, authors: art.authorsData.map(a => `${a.familyName}, ${a.givenName.charAt(0)}.`) });
+      }
+    }
+  }
+
   // ── Attach references (with 1–3 journal self-references for vol ≥ 3) ──
+  // Flagship papers keep their hand-written reference lists.
   const refYearCursor: Record<number, number> = {};
   for (const art of articles) {
+    if (art.flagship) continue;
     const refs: string[] = [];
-    const nRefs = art.type === 'Review Article' ? rint(26, 34) : rint(15, 24);
+    const nRefs = art.nRefs;
     // self references: only cite articles published in earlier volumes
     if (art.volume >= 3) {
       const earlier = publishedSoFar.filter(p => p.volume < art.volume);
@@ -415,6 +476,49 @@ async function main() {
     }
     while (refs.length < nRefs) refs.push(makeRef(R));
     art.references = refs;
+  }
+
+  // ── Render each paper to obtain the EXACT page count, then paginate issues ──
+  console.log('Rendering papers to compute exact page counts…');
+  let cursorKey = '';
+  let pageCursor = 1;
+  for (const art of articles) {
+    const { pageCount } = await buildPaperPdf({
+      title: art.title,
+      abstractText: art.abstractText,
+      keywords: art.keywords,
+      doi: art.doi,
+      volume: art.volume,
+      issue: art.issue,
+      year: art.year,
+      month: art.month,
+      pages: '',
+      type: art.type,
+      section: art.section,
+      receivedDate: art.receivedDate,
+      acceptedDate: art.acceptedDate,
+      publishedDate: art.publishedDate,
+      references: art.references.length ? art.references : Array.from({ length: art.nRefs }, () => 'Placeholder reference.'),
+      fullText: art.fullText,
+      correspondingEmail: art.correspondingEmail,
+      authors: art.authorsData.map(a => ({
+        givenName: a.givenName,
+        familyName: a.familyName,
+        isCorresponding: false,
+        department: a.department,
+        affiliation: a.affiliation,
+      })),
+    });
+    art.pdfPages = pageCount;
+
+    const key = `${art.volume}|${art.issue}`;
+    if (key !== cursorKey) { cursorKey = key; pageCursor = 1; }
+
+    if (art.status === 'published') {
+      const start = pageCursor;
+      pageCursor += art.pdfPages;
+      art.pages = `${start}–${pageCursor - 1}`;
+    }
   }
 
   // ── Insert authors ──
@@ -457,6 +561,7 @@ async function main() {
         receivedDate: a.receivedDate, acceptedDate: a.acceptedDate, publishedDate: a.publishedDate,
         citations: a.citations, downloads: a.downloads, pdfPages: a.pdfPages,
         references: JSON.stringify(a.references),
+        fullText: JSON.stringify(a.fullText),
         correspondingEmail: a.correspondingEmail,
         authors: {
           create: a.authorIds.map((x, i) => ({

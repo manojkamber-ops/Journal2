@@ -65,7 +65,7 @@ export function Header({ route }: { route: Route }) {
                 Iran Journal of Computer Science
               </h1>
               <p className="mt-0.5 truncate text-[11px] text-zinc-500 sm:text-xs">
-                Published by Springer Nature · Computer Science Applications · Continuous peer review
+                Indexed in: Scopus · Computer Science Applications · Continuous peer review
               </p>
             </div>
           </a>

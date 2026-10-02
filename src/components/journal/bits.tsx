@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArticleListItem } from '@/lib/journal-types';
 import { nav, fmtNum, truncate } from '@/lib/journal-client';
-import { FileText, Quote, Download, ChevronLeft, ChevronRight, Newspaper, Megaphone, Award, CalendarDays } from 'lucide-react';
+import { FileText, Quote, Download, ChevronLeft, ChevronRight, Newspaper, Megaphone, Award, CalendarDays, ExternalLink } from 'lucide-react';
 
 // ── Journal logo ─────────────────────────────────────────────────────────────
 export function JournalLogo({ size = 44 }: { size?: number }) {
@@ -101,6 +101,26 @@ export function AnnounceIcon({ type }: { type: string }) {
   return <CalendarDays className={`${cls} text-zinc-500`} aria-hidden />;
 }
 
+// ── DOI link (opens the full research paper) ─────────────────────────────────
+export function DoiLink({ doi, articleId, href, external = false, className = '' }: {
+  doi: string; articleId: string; href?: string; external?: boolean; className?: string;
+}) {
+  const resolved = href ?? `#/article/${articleId}`;
+  return (
+    <a
+      href={resolved}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noreferrer' : undefined}
+      title="Open the full research paper"
+      aria-label={`Open full paper for DOI ${doi}`}
+      className={`inline-flex items-center gap-1 break-all font-mono text-[11px] text-crimson transition-colors hover:text-crimson-dark hover:underline ${className}`}
+    >
+      <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
+      https://doi.org/{doi}
+    </a>
+  );
+}
+
 // ── Article row (list item used across views) ────────────────────────────────
 export function ArticleRow({ article, compact = false }: { article: ArticleListItem; compact?: boolean }) {
   const inPress = article.status === 'in_press';
@@ -138,7 +158,7 @@ export function ArticleRow({ article, compact = false }: { article: ArticleListI
           <>
             <span className="inline-flex items-center gap-1"><Quote className="h-3.5 w-3.5 text-zinc-400" aria-hidden /> {fmtNum(article.citations)} citations</span>
             <span className="inline-flex items-center gap-1"><Download className="h-3.5 w-3.5 text-zinc-400" aria-hidden /> {fmtNum(article.downloads)} downloads</span>
-            <span className="hidden font-mono text-[11px] text-zinc-400 sm:inline">DOI {article.doi}</span>
+            <DoiLink doi={article.doi} articleId={article.id} className="sm:inline-flex hidden" />
           </>
         )}
       </div>

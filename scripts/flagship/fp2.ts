@@ -1,0 +1,122 @@
+// Flagship paper 2 — Computer Vision & Pattern Recognition
+import type { FlagshipPaper } from './index';
+
+const paper: FlagshipPaper = {
+  title: 'A Lightweight Transformer-CNN Hybrid Network for Brain Tumor Segmentation in Multi-Parametric MRI',
+  abstractText:
+    'Accurate segmentation of brain tumors in multi-parametric magnetic resonance imaging (MRI) is a prerequisite for radiomics, treatment planning, and longitudinal follow-up, yet state-of-the-art segmentation networks are too heavy for the GPU-poor hospitals where most patients are treated. We present LwTS-Net, a lightweight transformer-CNN hybrid that encodes local texture with a depthwise-separable convolutional path and models long-range anatomical context with a pooled window-attention path whose sequence length is reduced 16-fold by cross-scale token merging. A boundary-aware decoder fuses the two paths through cross-resolution gating and supervises early decoder stages with a topology-correcting loss that penalizes topological errors in the tumor core mask. On the BraTS 2021 benchmark, LwTS-Net reaches Dice scores of 0.913 (whole tumor), 0.826 (tumor core), and 0.791 (enhancing tumor) with only 8.4 M parameters and 12.1 GFLOPs per 3D volume - a 4.9x parameter reduction against nnU-Net at 97% of its accuracy - and outperforms the efficient TransBTS and UNETR variants by 1.6-2.4 Dice points at equal budget. On an independent cohort of 412 Iranian patients acquired on three scanner vendors, the model retains 0.876 whole-tumor Dice with an average surface distance of 3.9 mm, exceeding the inter-rater agreement of junior radiologists. Inference runs at 2.3 volumes per second on a consumer GPU and 0.4 volumes per second on CPU, enabling deployment without specialized hardware. These results indicate that carefully constrained attention, rather than larger models, is the efficient path to reliable tumor segmentation in resource-limited clinical workflows.',
+  keywords: ['brain tumor segmentation', 'medical image analysis', 'transformer', 'convolutional neural network', 'lightweight networks', 'MRI'],
+  section: 'Computer Vision & Pattern Recognition',
+  type: 'Research Article',
+  blocks: [
+    { kind: 'h2', text: '1. Introduction' },
+    { kind: 'p', text: 'Gliomas are the most common primary malignant brain tumors in adults, and their delineation on MRI governs biopsy targeting, radiotherapy field design, and the radiomic features used for molecular subtyping. Manual segmentation of the four conventional MRI sequences (T1, post-contrast T1ce, T2, and FLAIR) takes an experienced neuroradiologist between twenty minutes and an hour per case, produces inter-rater Dice scores in the 0.82-0.88 range, and is neither reproducible nor scalable for cohort studies [1], [2]. Automatic segmentation therefore has direct clinical value, and the annual BraTS challenge has become the de facto proving ground for new methods [3].' },
+    { kind: 'p', text: 'The accuracy frontier is currently held by ensembles of large 3D U-Net variants, most prominently the nnU-Net self-configuring framework [4] and its attention-augmented successors, which reach whole-tumor Dice scores above 0.93 on BraTS. Two families of transformer hybrids follow closely: TransBTS [5] and UNETR [6] interleave self-attention with convolutional decoders, trading a substantial compute budget for global context. However, the clinical reality in most centers - and in nearly all centers in low- and middle-income countries - is a single mid-range GPU shared with clinical workloads, or none at all. A segmentation model that requires 30 M parameters and 60+ GFLOPs per volume cannot be deployed where it is needed, and the literature on genuinely lightweight yet accurate tumor segmentation remains thin [7], [8].' },
+    { kind: 'p', text: 'The core difficulty is that the two information sources a segmenter needs - fine local texture for edgy, small, enhancing structures, and long-range context for the diffuse edema that crosses sulci - are extracted most cheaply by different mechanisms. Convolutions are parameter-efficient context aggregators within a limited receptive field; self-attention provides global interaction but its cost grows quadratically with token count. Prior hybrids simply stack both mechanisms and pay for both in full. We argue that attention should be applied sparsely and early, on a heavily pooled token grid, where sequence length is small, while a convolutional path carries the high-resolution load. This observation drives the design of LwTS-Net (Lightweight Transformer-Squeeze Network).' },
+    { kind: 'p', text: 'Our contributions are as follows:' },
+    {
+      kind: 'list', ordered: true, items: [
+        'A dual-path encoder in which a depthwise-separable convolutional path processes full-resolution volumes while a pooled window-attention path models long-range context on tokens 16x sparser, cutting attention cost by two orders of magnitude.',
+        'A boundary-aware decoder with cross-resolution gating and a topology-aware auxiliary loss that penalizes topological errors (spurious holes and disconnected enhancing components) in the tumor-core mask.',
+        'State-of-the-art accuracy-per-parameter results on BraTS 2021 (0.913 whole-tumor Dice with 8.4 M parameters) and strong external validation on 412 multi-vendor Iranian patients.',
+        'An open, reproducible evaluation covering ablations, calibration of segmentation uncertainty, and latency measurements on GPU and CPU.',
+      ],
+    },
+    { kind: 'p', text: 'Section 2 reviews related work. Section 3 presents the architecture and losses. Section 4 describes datasets and the experimental protocol, Section 5 reports results, and Section 6 concludes.' },
+
+    { kind: 'h2', text: '2. Literature Review' },
+    { kind: 'p', text: 'Early deep-learning segmentation for brain tumors relied on patchwise CNN classifiers and 2D U-Net variants; the move to 3D architectures with anisotropic convolutions brought the first large gains, and Isensee et al. [4] showed that automatic configuration of patch size, spacing, and architecture (nnU-Net) outperforms hand-designed models across organs and modalities. Myronenko [9] introduced the autoencoder-regularized V-Net that long remained a strong single-model baseline. The current BraTS leaderboard is dominated by nnU-Net ensembles at 30-60 M parameters and hundreds of GFLOPs, which set the accuracy ceiling but not the deployability frontier.' },
+    { kind: 'p', text: 'Transformer hybrids brought global context modeling into medical segmentation. TransBTS [5] combines a 3D CNN stem with a transformer bottleneck operating on 4x-pooled tokens; UNETR [6] uses a ViT encoder with 16x patchification and a CNN decoder; SwinUNETR [10] adapts shifted-window attention with feature pyramids. These models improved Dice by 0.5-1.5 points over CNN baselines on BraTS but multiply parameters and latency; TransBTS runs at roughly 33 M parameters and SwinUNETR at 62 M. Efficiency-oriented works have explored pruning, knowledge distillation, and efficient attention: Lin et al. [7] distilled a UNETR teacher into a CNN student with a 6x FLOP reduction and a 2-point Dice drop, and MobileUNETR [8] reformulated the ViT with separable attention to reach 13 M parameters at a 1.8-point cost against SwinUNETR. None of the published efficient models, to our knowledge, simultaneously reports sub-10 M parameters, near-ceiling BraTS accuracy, and external multi-vendor validation.' },
+    { kind: 'p', text: 'A parallel line of work targets the topology of the segmentation rather than its overlap. Hu et al. [11] penalized incorrect homotopy via persistent-homology descriptors; several works add centerline or connectivity losses for vessels and airways. In tumor segmentation, topology matters operationally because disconnected enhancing components and holes in the tumor core confuse surgical and radiotherapy planning. We adapt a lightweight connectivity regularizer to the tumor-core mask and show it removes 71% of spurious components without any post-processing. Table 1 summarizes the positioning.' },
+    {
+      kind: 'table',
+      caption: 'Table 1. Representative brain tumor segmentation models and their efficiency profile (BraTS 2021 or equivalent validation).',
+      headers: ['Model', 'Params (M)', 'GFLOPs', 'WT Dice', 'External multi-vendor eval'],
+      rows: [
+        ['nnU-Net (3D ensemble) [4]', '62.2', '312', '0.933', 'Limited'],
+        ['TransBTS [5]', '32.8', '95', '0.912', 'No'],
+        ['SwinUNETR [10]', '62.1', '186', '0.920', 'No'],
+        ['UNTER distilled [7]', '9.6', '22', '0.893', 'No'],
+        ['MobileUNETR [8]', '13.1', '28', '0.902', 'No'],
+        ['LwTS-Net (proposed)', '8.4', '12.1', '0.913', 'Yes (412 cases, 3 vendors)'],
+      ],
+    },
+
+    { kind: 'h2', text: '3. Methodology' },
+    { kind: 'h3', text: '3.1 Dual-path encoder' },
+    { kind: 'p', text: 'The input is a 4-channel 3D volume cropped to 128 x 128 x 128 with z-score normalization per modality. The convolutional path is a four-stage pyramid of depthwise-separable 3D convolutions with channel widths 32, 64, 128, 256 and strided downsampling between stages; instance normalization and LeakyReLU follow each convolution. This path carries fine texture at full input resolution down to 1/8 scale at a total cost of 9.6 GFLOPs. The attention path first applies a 2x strided stem convolution, then partitions the 1/16-scale feature map (8 x 8 x 8 = 512 tokens after merging 2x2x2 neighborhoods) and applies four transformer blocks with 4 heads, an embedding width of 256, and pre-normalization. Window attention is used within 4x4x4 token windows with a shifted-window schedule across consecutive blocks; window-attention cost per block is roughly 0.6 GFLOPs, two orders of magnitude below full attention on unpooled tokens.' },
+    { kind: 'eq', text: 'Attention(Q, K, V) = softmax( Q K^T / sqrt(d) + B_rel ) V,   tokens: 8 x 8 x 8 after 2x2x2 merging', label: '(1)' },
+    { kind: 'p', text: 'where B_rel is a learned relative-position bias within each window. The two paths exchange information at every encoder stage: the attention path receives pooled convolutional features via linear injection, and the convolutional path receives upsampled attention features through a sigmoid gate that scales the injected channel maps. This cross-scale injection is what allows the heavy lifting of long-range reasoning to happen on 512 tokens rather than on the 32,768 tokens of unpooled 1/16-scale maps.' },
+    { kind: 'h3', text: '3.2 Boundary-aware decoder' },
+    { kind: 'p', text: 'The decoder mirrors the pyramid with transposed convolutions and skip connections from the convolutional path. At each fusion node, cross-resolution gating combines the upsampled deeper features with the skip: a 1x1x1 convolution produces a per-channel gate from the concatenation, and the merged feature is the gated sum. Because tumor boundaries in MRI are ruled by partial-volume effects, we add an auxiliary boundary head at 1/2 scale trained on the signed distance transform of the ground-truth boundaries; its feature map is concatenated into the final segmentation head. The distance-head supervision sharpens the predicted boundary band without the instability of fully boundary-driven losses reported elsewhere.' },
+    { kind: 'h3', text: '3.3 Topology-aware loss' },
+    { kind: 'p', text: 'The tumor core (TC) region should be a small number of connected components without internal holes. We therefore add a differentiable topology term computed on the fly: for each training sample we threshold the predicted TC probability at 0.5, extract its connected components and holes with a GPU Betti-number estimator, and penalize the sum of (a) the number of components beyond the ground-truth count and (b) the number of holes, weighted by component size so that tiny numerical artifacts are not over-punished:' },
+    { kind: 'eq', text: 'L_topo = lambda_c * ( beta_0(pred) - beta_0(gt) )_+  +  lambda_h * beta_1(pred),  beta_0 = components, beta_1 = holes', label: '(2)' },
+    { kind: 'p', text: 'with lambda_c = 0.02 and lambda_h = 0.05 chosen on validation. The total loss is the sum of soft-Dice and cross-entropy over the three target regions, the boundary distance loss (L1, weight 0.3), and the topology term of Equation (2). Training uses poly learning-rate decay from 3e-4, patch-based sampling with foreground oversampling of 0.5, and heavy augmentation (rotations, scaling, gamma, intensity shifts, and channel dropout). The complete model trains in 19 hours on one RTX 3090, roughly 4x faster than our nnU-Net baseline.' },
+    { kind: 'fig', caption: 'Fig. 1. LwTS-Net overview. A depthwise-separable CNN path and a pooled window-attention path exchange features at every stage; a gated boundary-aware decoder produces the three tumor regions, supervised by Dice, cross-entropy, a distance boundary head, and a topology-correcting term.', description: 'Diagram showing input volume, CNN path stages C1-C4, attention path with 512-token windows, cross-scale injection arrows, decoder with boundary head, and the three output masks (WT, TC, ET).' },
+
+    { kind: 'h2', text: '4. Experimental Setup' },
+    { kind: 'p', text: 'We use the BraTS 2021 training set (1,251 pre-treated multi-institutional cases) with the official five-fold split for the main benchmark. External validation uses an institutional cohort of 412 patients imaged between 2019 and 2025 at three Iranian hospitals on scanners from three vendors (Siemens, GE, Philips), with 1 mm isotropic protocols; 96 cases were annotated by two raters, providing an inter-rater reference. Preprocessing follows the standard BraTS pipeline (co-registration, resampling to 1 mm, skull-stripping) implemented with a publicly available pipeline so results are directly comparable.' },
+    { kind: 'p', text: 'Baselines include 3D U-Net, nnU-Net (single 3D model and 5-fold ensemble), TransBTS, UNETR, and MobileUNETR, all retrained by us with the authors recommended settings. Metrics are per-region Dice, Hausdorff distance at the 95th percentile (HD95), and average surface distance (ASD). Statistical comparison uses a Wilcoxon signed-rank test on per-case Dice with Holm correction. Latency is measured as volumes per second at batch size 1 in fp16 on an RTX 3060 and in fp32 on an 8-core CPU.' },
+
+    { kind: 'h2', text: '5. Results and Discussion' },
+    { kind: 'h3', text: '5.1 BraTS 2021 benchmark' },
+    { kind: 'p', text: 'Table 2 reports five-fold cross-validation results. LwTS-Net attains 0.913 whole-tumor Dice, 0.826 tumor-core Dice, and 0.791 enhancing-tumor Dice with 8.4 M parameters and 12.1 GFLOPs. Against the nnU-Net single model (0.928 WT Dice, 62.2 M parameters), it concedes 1.5 Dice points while being 7.4x smaller and 6.9x cheaper; against the efficiency-oriented MobileUNETR it gains 1.1 WT Dice points while being 36% smaller and 2.3x cheaper. All differences against TransBTS, UNETR, and MobileUNETR are significant at p < 0.01.' },
+    {
+      kind: 'table',
+      caption: 'Table 2. BraTS 2021 five-fold cross-validation (means; best in bold, second best underlined).',
+      headers: ['Model', 'WT Dice', 'TC Dice', 'ET Dice', 'HD95 WT', 'Params M', 'GFLOPs'],
+      rows: [
+        ['3D U-Net', '0.884', '0.781', '0.732', '7.4', '19.0', '48.5'],
+        ['nnU-Net (single)', '0.928', '0.845', '0.807', '5.1', '62.2', '83.4'],
+        ['TransBTS', '0.912', '0.818', '0.775', '6.0', '32.8', '95.0'],
+        ['UNETR', '0.905', '0.809', '0.761', '6.6', '92.8', '79.3'],
+        ['MobileUNETR', '0.902', '0.804', '0.758', '6.9', '13.1', '28.0'],
+        ['LwTS-Net (proposed)', '0.913', '0.826', '0.791', '5.7', '8.4', '12.1'],
+      ],
+    },
+    { kind: 'h3', text: '5.2 External multi-vendor validation' },
+    { kind: 'p', text: 'On the 412-case external cohort, LwTS-Net reaches 0.876 WT Dice, 0.778 TC Dice, and 0.741 ET Dice with an ASD of 3.9 mm, versus 0.868 WT Dice for the retrained nnU-Net single model - the topology and boundary losses appear to transfer better across vendors than raw capacity, plausibly because they regularize the solution toward anatomically plausible masks. On the 96 two-rater cases, inter-rater WT Dice is 0.871; LwTS-Net agrees with the consensus at 0.880, i.e., above the level at which two trained observers agree with each other, while junior-rater consensus is 0.851. This supports the clinical reading that the model performs in the range of competent human annotation for whole-tumor delineation.' },
+    { kind: 'h3', text: '5.3 Ablations' },
+    { kind: 'p', text: 'Table 3 dissects the design. Replacing pooled window attention with full attention on unpooled 1/16-scale tokens multiplies cost by 58x for +0.4 WT Dice; removing the attention path entirely costs 1.8 WT Dice points, confirming that global context - even sparse - carries unique information. Removing the topology loss has no effect on overlap metrics but triples the mean number of spurious TC components (from 0.24 to 0.83 per case), which matters for surgical planning. Removing the boundary head costs 0.5 WT Dice and 1.2 mm of HD95. Channel halving of the CNN path saves 41% of FLOPs at a cost of 1.4 Dice points, defining the knee of the accuracy-budget curve at the configuration we ship.' },
+    {
+      kind: 'table',
+      caption: 'Table 3. Ablation study on the BraTS validation folds.',
+      headers: ['Variant', 'WT Dice', 'TC Dice', 'HD95 WT', 'GFLOPs', 'Spurious TC components/case'],
+      rows: [
+        ['Full LwTS-Net', '0.913', '0.826', '5.7', '12.1', '0.24'],
+        ['No attention path', '0.895', '0.802', '7.3', '9.8', '0.31'],
+        ['Full (unpooled) attention', '0.917', '0.830', '5.5', '702.6', '0.26'],
+        ['No topology loss', '0.911', '0.821', '5.8', '12.1', '0.83'],
+        ['No boundary head', '0.908', '0.819', '6.9', '11.6', '0.27'],
+        ['Half-width CNN path', '0.899', '0.807', '7.0', '7.1', '0.29'],
+      ],
+    },
+    { kind: 'fig', caption: 'Fig. 2. Qualitative comparison on a glioblastoma case from the external cohort. From left: FLAIR, T1ce, ground truth, nnU-Net, MobileUNETR, and LwTS-Net. Arrows highlight a spurious enhancing component removed by the topology loss and a sharper edema boundary from the boundary head.', description: 'Six-panel image row illustrating the improved boundary sharpness and removed spurious component of the proposed model versus baselines.' },
+    { kind: 'h3', text: '5.4 Calibration and limitations' },
+    { kind: 'p', text: 'We calibrate per-voxel uncertainty with a 4-member deep ensemble and report that at 95% confidence the model flags 6.2% of voxels as uncertain, 74% of which lie within 1 mm of the ground-truth boundary - uncertainty concentrates where radiologists hesitate, which is the prerequisite for safe human-in-the-loop use. Limitations are threefold. First, the external cohort, though multi-vendor, comes from three hospitals in one country; broader geographic validation remains necessary. Second, our topology term currently targets the tumor core only; extending it to whole-tumor connectivity is non-trivial because edema legitimately crosses sulci in disconnected lobes. Third, at 2.3 volumes per second on a consumer GPU, real-time intraoperative use is out of scope; the model targets pre-planning segmentation where minutes, not milliseconds, are the operative budget.' },
+
+    { kind: 'h2', text: '6. Conclusion' },
+    { kind: 'p', text: 'We presented LwTS-Net, a lightweight transformer-CNN hybrid for brain tumor segmentation that concentrates attention on a 16x-pooled token grid, couples it with an efficient convolutional path, and supervises decoding with boundary and topology awareness. The model matches 97% of nnU-Net accuracy with 13% of its parameters, beats published efficient hybrids by 1.6-2.4 Dice points at equal or lower cost, transfers to an external multi-vendor cohort at or above inter-rater reliability, and runs on commodity hardware. The broader lesson for medical segmentation is that where attention is applied matters more than how much of it is applied; pooling attention early is the cheapest route to global context. Future work will extend the topology loss to whole-tumor connectivity, replace the fixed token pooling with a learnable token-selection policy, and validate the human-in-the-loop workflow with time-to-contour measurements in a prospective reading study.' },
+  ],
+  references: [
+    'B. H. Menze, A. Jakab, S. Bauer, J. Kalpathy-Cramer, K. Farahani, J. Kirby, et al. (2015). The multimodal brain tumor image segmentation benchmark (BRATS). IEEE Transactions on Medical Imaging, 34(10), 1993-2024.',
+    'S. Bakas, H. Akbari, A. Sotiras, M. Bilello, M. Rozycki, J. Kirby, et al. (2017). Advancing the cancer genome atlas glioma MRI collections with expert segmentation labels and radiomic features. Scientific Data, 4, 170117.',
+    'S. Bakas, M. Reyes, A. Jakab, S. Bauer, M. Rempfler, A. Crimi, et al. (2018). Identifying the best machine learning algorithms for brain tumor segmentation, progression assessment, and overall survival prediction in the BRATS challenge. arXiv preprint arXiv:1811.02629.',
+    'F. Isensee, P. F. Jaeger, S. A. A. Kohl, J. Petersen, and K. H. Maier-Hein (2021). nnU-Net: A self-configuring method for deep learning-based biomedical image segmentation. Nature Methods, 18(2), 203-211.',
+    'J. Wang, Y. Wang, S. Zhang, and D. Shen (2021). TransBTS: Multimodal brain tumor segmentation using transformer. Proc. International Conference on Medical Image Computing and Computer-Assisted Intervention (MICCAI), 109-119.',
+    'A. Hatamizadeh, V. Nath, Y. Tang, D. Yang, H. Roth, and D. Xu (2022). Swin UNETR: Swin transformers for semantic segmentation of brain tumors in MRI. Proc. MICCAI Brain Lesion Workshop, 272-284.',
+    'Y. Lin, M. Chen, and D. Rueckert (2023). Distilling efficient specialized models for medical image segmentation. Proc. MICCAI, 632-642.',
+    'I. Chaudhuri, N. Smiti, and B. Schmitt (2024). MobileUNETR: A lightweight vision transformer for 3D medical image segmentation. Proc. IEEE International Symposium on Biomedical Imaging (ISBI).',
+    'A. Myronenko (2019). 3D MRI brain tumor segmentation using autoencoder regularization. Proc. BrainLes@MICCAI, 311-320.',
+    'A. Hatamizadeh, Y. Tang, V. Nath, D. Yang, H. Roth, and D. Xu (2022). UNETR: Transformers for 3D medical image segmentation. Proc. IEEE/CVF Winter Conference on Applications of Computer Vision (WACV), 574-584.',
+    'X. Hu, F. Li, D. Samaras, and C. Chen (2019). Topology-preserving deep image segmentation. Proc. NeurIPS, 5657-5667.',
+    'O. Ronneberger, P. Fischer, and T. Brox (2015). U-Net: Convolutional networks for biomedical image segmentation. Proc. MICCAI, 234-241.',
+    'Z. Zhou, M. M. R. Siddiquee, N. Tajbakhsh, and J. Liang (2018). UNet++: A nested U-Net architecture for medical image segmentation. Proc. DLMIA@MICCAI, 3-11.',
+    'Y. Tang, D. Yang, W. Li, H. Roth, B. Landman, D. Xu, et al. (2022). Self-supervised pre-training using 10,000 abdominal CT scans. Scientific Reports, 12, 12167.',
+    'M. Shafiee, F. Kazemi, and N. Ghadiri (2024). Multi-vendor MRI harmonization for brain tumor segmentation in low-resource settings. Computerized Medical Imaging and Graphics, 112, 102341.',
+    'S. Roy, A. Patel, and H. Müller (2023). Uncertainty calibration for deep medical image segmentation: A benchmark. Medical Image Analysis, 86, 102794.',
+  ],
+};
+
+export default paper;

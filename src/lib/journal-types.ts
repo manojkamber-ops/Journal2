@@ -1,5 +1,17 @@
 // Shared journal types used by API routes and the frontend.
 
+// ── Full-paper content blocks ─────────────────────────────────────────────────
+// A complete paper body is a flat list of blocks; the web view and the PDF
+// renderer both consume this structure.
+export type PaperBlock =
+  | { kind: 'h2'; text: string }
+  | { kind: 'h3'; text: string }
+  | { kind: 'p'; text: string }
+  | { kind: 'list'; ordered?: boolean; items: string[] }
+  | { kind: 'table'; caption: string; headers: string[]; rows: string[][]; note?: string }
+  | { kind: 'eq'; text: string; label?: string }
+  | { kind: 'fig'; caption: string; description: string };
+
 export interface AuthorDTO {
   id: string;
   givenName: string;
@@ -38,6 +50,7 @@ export interface ArticleDetail extends ArticleListItem {
   acceptedDate: string;
   pdfPages: number;
   references: string[];
+  fullText: PaperBlock[];
   correspondingEmail: string;
   authorDetails: AuthorDTO[];
   similar: {

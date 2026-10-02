@@ -8,7 +8,8 @@ export const JOURNAL = {
   shortName: 'IJCS',
   issn: '2520-8438',
   eissn: '2520-8446',
-  publisher: 'Springer Nature',
+  publisher: 'IJCS Editorial Office',
+  indexing: 'Indexed in: Scopus',
   prefix: '10.22034/ijcs',
   founded: 2018,
 };

@@ -19,3 +19,24 @@ Stage Summary:
 - Deliverable: fully working journal website at `/` (Next.js 16 + Prisma/SQLite + pdf-lib), 259 seeded articles across 2018–2026 with full metadata, working search/filters/pagination, real PDF downloads, citation export, contact+newsletter persistence.
 - Key files: `prisma/schema.prisma`, `scripts/seed-data.ts`, `scripts/seed.ts`, `src/lib/journal-{types,client}.ts`, `src/components/journal/*` (header, footer, bits, 9 views), `src/app/page.tsx`, `src/app/api/**`.
 - Re-seed anytime with `bun scripts/seed.ts` (deterministic).
+
+---
+Task ID: 2
+Agent: Main agent (Super Z)
+Task: Upgrade the IJCS journal website per user follow-up — (a) write the WHOLE paper (6-13 pages: Introduction, Literature Review, Methodology, Experimental Setup, Results & Discussion, Conclusion, References) for every article, (b) DOI links open the research paper when clicked, (c) replace "Published by Springer Nature" with "Indexed in: Scopus".
+
+Work Log:
+- Schema: added `fullText` JSON column (PaperBlock[]: h2/h3/p/list/table/eq/fig) to Article; pushed via `bun run db:push`.
+- Hand-wrote 8 complete flagship papers (`scripts/flagship/fp1..8.ts`, ~3,000 words each with tables, equations, figure blocks, 16-22 references) on UEA-Net load forecasting, LwTS-Net brain tumor segmentation, ParsQA Persian QA, FedIDS-DP privacy-preserving IDS, EAC-RL VM consolidation, WGANet ECG classification, STGNP Tehran traffic prediction, and LLM-assisted program repair; placed into Vol. 9, Issue 3 (current issue).
+- Built template-based full-paper generator (`scripts/paper-text.ts`) producing complete structured papers (6 sections, 2-5 tables, equations, figures, bounded citation markers) for all remaining 251 articles with length variants (short communication → review).
+- Refactored PDF rendering into shared `src/lib/pdf-render.ts` (buildPaperPdf returns bytes + exact page count); API route now serves full multi-page papers; seed renders every paper to compute EXACT pdfPages so displayed "pp. X–Y" ranges match the actual PDFs. Final distribution: 6-9 pages per paper, all within the 6-13 window, zero outside.
+- DOI behavior: new `DoiLink` component — on lists (home/articles/issues) clicking "https://doi.org/…" navigates to the in-app full paper page; on the article page the DOI opens the full-text PDF in a new tab.
+- Branding: replaced Springer Nature with "Indexed in: Scopus" in header masthead, footer (badge + bottom bar), home hero, about page (info row, timeline, ownership policy), layout metadata/title, PDF header band and footer. seed-data publisher changed to IJCS Editorial Office.
+- Article view rewrite: full paper body renderer (numbered sections, subsections, justified paragraphs, styled tables with captions/notes, centered equations with labels, figure boxes), "On this page" sticky TOC with smooth scroll, DOI + access bar with page count/reading time.
+- Fixed mobile horizontal overflow (author-span nowrap bug, grid min-w-0, break-all DOI links, wrapping equation blocks); verified 390px = no overflow.
+- Agent Browser E2E: home renders with Scopus branding; current issue lists the 8 flagship papers; clicking DOI on articles list opens the paper; article-page DOI opens PDF; TOC scroll works; search + footer verified; flagship PDF = 9 pages with UEA-Net content + "Indexed in: Scopus" header; zero page errors; `bun run lint` clean.
+
+Stage Summary:
+- Deliverable: every one of the 259 articles now opens as a COMPLETE research paper (full text on-page + 6-9 page PDF) with Introduction, Literature Review, Methodology, Experimental Setup, Results & Discussion, Conclusion and References; DOIs open papers; site branding is "Indexed in: Scopus".
+- Key files: `scripts/flagship/*` (8 hand-written papers), `scripts/paper-text.ts`, `scripts/seed.ts`, `src/lib/pdf-render.ts`, `src/app/api/articles/[id]/pdf/route.ts`, `src/app/api/articles/[id]/route.ts`, `src/components/journal/views/article.tsx`, `src/components/journal/bits.tsx`, header/footer/home/about/layout branding.
+- Re-seed anytime with `bun scripts/seed.ts` (deterministic, renders PDFs for exact page counts).

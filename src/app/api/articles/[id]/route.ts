@@ -46,6 +46,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       downloads: a.downloads,
       pdfPages: a.pdfPages,
       references: JSON.parse(a.references),
+      fullText: JSON.parse(a.fullText || '[]'),
       correspondingEmail: a.correspondingEmail,
       authors: a.authors.map(aa => ({
         id: aa.authorId,

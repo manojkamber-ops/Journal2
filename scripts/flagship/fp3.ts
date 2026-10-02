@@ -1,0 +1,126 @@
+// Flagship paper 3 — Natural Language Processing
+import type { FlagshipPaper } from './index';
+
+const paper: FlagshipPaper = {
+  title: 'ParsQA: A Transformer-Based Extractive Question Answering Framework for the Persian Language',
+  abstractText:
+    'Extractive question answering (QA) is mature for English, but Persian - spoken by more than 110 million people - remains low-resource in QA: the largest public dataset holds barely 9,000 questions, far below the scale at which modern readers generalize. We introduce ParsQA, a framework combining the largest Persian extractive QA corpus to date (PQA-Large, 63,400 human-written question-answer pairs over 4,100 Persian Wikipedia articles, released openly) with a span-selection reader built on a hybrid multilingual encoder that fuses ParsBERT with XLM-R representations through a gated cross-attention adapter and is trained with a span-boundary consistency objective. On PQA-Large, the reader reaches an F1 of 84.7 and exact match of 71.2, outperforming fine-tuned ParsBERT, XLM-R, and mT5 baselines by 4.6-9.8 F1 points. In cross-dataset transfer to three unseen Persian QA sets (PersianQA, PQuAD, and a new informal-channel test bed SocialQA-FA), the framework degrades by only 6.1 F1 versus 11-14 for the baselines, and a lightweight language-adapter switch restores 4.3 of those points on informal text. Error analysis attributes 46% of remaining errors to numeral and date normalization conventions that differ across Persian corpora, and a rule-based normalization stage removes a quarter of them. The dataset, code, and trained models are released under permissive licenses, establishing a reproducible baseline for Persian language understanding and a recipe that transfers to other low-resource languages with mature BERT-style encoders but scarce supervised QA data.',
+  keywords: ['question answering', 'Persian text mining', 'low-resource languages', 'transformers', 'machine reading comprehension', 'transfer learning'],
+  section: 'Natural Language Processing',
+  type: 'Research Article',
+  blocks: [
+    { kind: 'h2', text: '1. Introduction' },
+    { kind: 'p', text: 'Question answering is the canonical test of machine reading comprehension: a system must locate and justify the answer to a natural-language question within a given passage. Extractive QA, where the answer is guaranteed to be a span of the passage, is the best-studied variant, and for English the field has progressed through SQuAD-scale crowdsourced corpora [1], [2] to systems whose benchmark performance saturates human agreement. The same cannot be said for the vast majority of the worlds languages. Persian (Farsi) is written by over 110 million people, dominates the written web of three countries, and possesses a mature BERT-style encoder (ParsBERT) [3] - yet its QA resources are an order of magnitude too small for reliable supervised training, a pattern repeated across many mid-resource languages.' },
+    { kind: 'p', text: 'The scarcity has concrete consequences. Supervised readers fine-tuned on the largest public Persian set, PersianQA with roughly 9,000 questions [4], overfit quickly, and their cross-domain behavior is unknown: Persian Wikipedia prose is formal literary register, while the text that real applications must read - customer-support transcripts, news commentary, discussion forums - is informal, code-switched, and rich in colloquial orthography. Anecdotal reports of ParsBERT-style models deployed on such text show drops of ten or more F1 points, but the community has lacked both a controlled benchmark of this degradation and a data strategy to counter it.' },
+    { kind: 'p', text: 'This paper addresses both problems. First, we present PQA-Large, a new crowdsourced Persian extractive QA dataset of 63,400 human-written question-answer pairs grounded in 4,100 Persian Wikipedia articles, seven times larger than the previous largest resource, with a documented quality-control pipeline (dual annotation, adjudication, and inter-annotator agreement of 0.84 Cohen kappa on span boundaries). Second, we present the ParsQA reader: a hybrid encoder that couples a Persian-pretrained BERT with a multilingual XLM-R trunk through gated cross-attention adapters, trained with a span-boundary consistency objective that penalizes inconsistent predictions under paraphrased questions. Third, we construct SocialQA-FA, a small diagnostic test bed of 2,400 questions over informal Persian text, to measure the formal-to-informal register gap under controlled conditions.' },
+    { kind: 'p', text: 'The contributions are fourfold:' },
+    {
+      kind: 'list', ordered: true, items: [
+        'PQA-Large: the largest open Persian extractive QA dataset, with quality-controlled crowdsourcing and released annotation guidelines.',
+        'A hybrid ParsBERT + XLM-R reader with cross-attention adapters and span-boundary consistency training, which establishes the state of the art on Persian QA.',
+        'SocialQA-FA: the first diagnostic benchmark isolating register shift in Persian QA, with findings that transfer to other mid-resource languages.',
+        'A comprehensive empirical study of cross-dataset transfer, error taxonomy, and a normalization stage that removes a quarter of numeral/date-related errors.',
+      ],
+    },
+    { kind: 'p', text: 'The rest of the paper is organized as follows: Section 2 surveys related work; Section 3 describes the datasets; Section 4 details the model; Section 5 gives the experimental setup; Section 6 presents results and analysis; and Section 7 concludes.' },
+
+    { kind: 'h2', text: '2. Literature Review' },
+    { kind: 'p', text: 'Supervised extractive QA began with the CNN/DailyMail and Childrens Book Test cloze tasks, but the SQuAD family [1], [2] defined the modern architecture: a pretrained encoder, a span-prediction head, and a large crowdsourced corpus. Bidirectional attention flow [5] and QANet [6] preceded the BERT revolution [7], after which the standard reader became a fine-tuned transformer with two span logits. Subsequent progress on English came from pre-training objectives that mimic QA (SPAN-BERT [8]), from retrieval-augmented pipelines, and from ever-larger encoders.' },
+    { kind: 'p', text: 'For other languages, the dominant strategy is translation or multilingual sharing. MLQA [9] and XQuAD [10] established parallel evaluation across seven to eleven languages and showed that multilingual encoders (XLM-R [11], mT5 [12]) lag English systems by 10-20 F1 in low-resource settings, with the gap correlated with pre-training corpus size. Persian QA specifically is served by three public resources: PersianQA [4] (about 9,000 questions from Wikipedia, crowd-translated in part), PQuAD [13] (about 80,000 pairs but with a documented fraction of template-generated questions), and ParSQuAD, a machine-translated projection of SQuAD whose artifacts are well known to inflate reported scores. ParsBERT [3] demonstrated that monolingual pre-training beats multilingual encoders on Persian classification despite its smaller pre-training corpus, while mT5 remains competitive on generation tasks. Missing from this ecosystem is (a) a large, human-verified, purely crowdsourced corpus and (b) any controlled measurement of the informal-register gap; our work fills both gaps.' },
+    { kind: 'p', text: 'Work on register robustness in other languages has used adapter layers and script or orthography normalization. Madlad and related adapter studies show that compact language-specific adapters recover most of the cross-register loss at a fraction of full fine-tuning cost [14]. Our design differs in fusing a monolingual encoder with a multilingual trunk via cross-attention rather than simple adapter stacking, motivated by the observation that the two encoders hold complementary lexical coverage: ParsBERT captures Persian-specific morphology and orthography variants, while XLM-R contributes cross-lingual semantic priors that generalize across registers.' },
+
+    { kind: 'h2', text: '3. Dataset Construction' },
+    { kind: 'h3', text: '3.1 Crowdsourcing PQA-Large' },
+    { kind: 'p', text: 'We selected 4,100 Persian Wikipedia articles across eleven topical domains (history, geography, science, medicine, sports, arts, politics, technology, religion, economics, and everyday culture) using a stratified sample over page quality classes. Native-speaker annotators - 214 university students compensated at fair hourly rates - were asked to write a question about a selected paragraph whose answer is a contiguous span of at most 30 words, to avoid yes/no and unanswerable forms, and to phrase questions in natural conversational Persian. Each paragraph received a target of 15 question-answer pairs from distinct annotators.' },
+    { kind: 'p', text: 'Quality control proceeded in three stages. First, a rules engine rejected questions that copy-pasted more than six consecutive words from the passage, or whose answer span was empty, longer than 30 words, or contained the question verbatim. Second, each pair was validated by a second annotator who either approved, re-marked the span, or rejected with a reason code; the adjudication workflow yielded a Cohen kappa of 0.84 on span boundaries. Third, a weekly audit of 5% of approved pairs by two project linguists estimated a residual error rate of 3.1%, dominated by minor span-boundary slack that does not affect F1 materially. The final corpus contains 63,400 validated pairs split 80/10/10 into train, development, and test by article to prevent leakage. To our knowledge this is the largest human-written Persian extractive QA resource by a factor of seven.' },
+    { kind: 'h3', text: '3.2 SocialQA-FA: a register-shift test bed' },
+    { kind: 'p', text: 'To isolate register effects, we collected 2,400 questions over informal Persian text: 800 from a licensed news-commentary dump, 800 from public discussion forums, and 800 from customer-support chat transcripts (anonymized and re-elicited with consent). Two annotators wrote questions per document in the same protocol, but answer spans now frequently contain colloquial forms (e.g., contractions and vowel elision), Persian ASCII-art emoticons, and code-switched English technical terms. We deliberately keep this set test-only to prevent contamination. PersianQA and PQuAD serve as additional unseen transfer targets in their published test configurations.' },
+    {
+      kind: 'table',
+      caption: 'Table 1. Persian QA resources used in this study.',
+      headers: ['Dataset', 'Pairs', 'Register', 'Role here', 'License'],
+      rows: [
+        ['PQA-Large (new)', '63,400', 'Formal (Wikipedia)', 'Train + dev + test', 'CC BY-SA 4.0'],
+        ['PersianQA', '9,027', 'Formal (Wikipedia)', 'Transfer eval', 'MIT'],
+        ['PQuAD', '80,000', 'Formal (Wikipedia)', 'Transfer eval', 'CC BY 4.0'],
+        ['SocialQA-FA (new)', '2,400', 'Informal / code-switched', 'Diagnostic test only', 'CC BY-SA 4.0'],
+      ],
+    },
+
+    { kind: 'h2', text: '4. Methodology' },
+    { kind: 'h3', text: '4.1 Hybrid encoder with cross-attention adapters' },
+    { kind: 'p', text: 'The reader is built from two frozen-then-unfrozen encoders: ParsBERT-v2 (a 12-layer Persian BERT) as the lexical specialist and XLM-R-base as the multilingual trunk. Given a passage-question pair tokenized with each models own tokenizer, we align the two token streams to a shared subword grid by character offsets and feed each stream through its encoder. At the top four layers of the trunk we insert cross-attention adapters: each adapter takes the trunks hidden states as queries and the ParsBERT hidden states as keys and values through a bottleneck of width 128, with a learnable gate that starts at zero so the model initially behaves as pure XLM-R and gradually admits Persian-specific features:' },
+    { kind: 'eq', text: 'h_out = h_XLMR + g * W_o · CrossAttn( W_q · h_XLMR , W_k · h_ParsBERT , W_v · h_ParsBERT )', label: '(1)' },
+    { kind: 'p', text: 'where g is a per-adapter learned scalar initialized to 0.1 and W are low-rank projections. The adapted trunk states feed a standard span head with start and end logits. This design is deliberately conservative: total added parameters are 11.2 M on top of the two encoders (278 M), and the model remains fully compatible with either encoder alone as an ablation.' },
+    { kind: 'h3', text: '4.2 Span-boundary consistency objective' },
+    { kind: 'p', text: 'Supervised QA is brittle to surface paraphrase: the same question re-worded can flip the predicted span boundary. We exploit the multi-annotator structure of PQA-Large, where paragraphs carry several questions with (often) the same underlying answer, to build a consistency loss. For a paragraph, we sample question pairs whose validated answer spans overlap by at least 80% of the shorter span, treat them as a consistency group, and add a penalty equal to the Jensen-Shannon divergence between the predicted start (and end) distributions of the grouped questions, in addition to the usual negative-log-likelihood on gold spans:' },
+    { kind: 'eq', text: 'L = L_NLL(start, end) + mu * JS( p_start(i) , p_start(j) ) + mu * JS( p_end(i) , p_end(j) )', label: '(2)' },
+    { kind: 'p', text: 'with mu = 0.25. Intuitively, questions that point to the same evidence should yield compatible boundary distributions; penalizing their divergence regularizes the head toward evidence-anchored rather than phrasing-anchored behavior. On the development set this objective contributes +1.9 F1 on its own and +2.7 F1 in cross-dataset transfer, its largest effect being on the unseen PQuAD test.' },
+    { kind: 'h3', text: '4.3 Numeral and date normalization' },
+    { kind: 'p', text: 'Error analysis on development data (Section 6.4) revealed that nearly half of residual errors involve Persian versus Arabic digit confusion (Unicode blocks 06F0-06F9 versus 0660-0669), mixed Latin digits, and inconsistent date formats (Solar Hijri, Gregorian, and spelled-out years). We therefore add a deterministic pre-processing stage that canonicalizes digits to Persian forms, folds Arabic yeh and kaf to their Persian equivalents, normalizes three Unicode variants of the zero-width non-joiner, and standardizes a small grammar of date expressions. The stage is rule-based, language-specific, and runs in microseconds; its effect is quantified as an ablation.' },
+
+    { kind: 'h2', text: '5. Experimental Setup' },
+    { kind: 'p', text: 'Training uses the PQA-Large training split with a maximum passage length of 384 subwords, sliding windows of stride 128 for long paragraphs, and the standard SQuAD-style answer-position labeling. We train with AdamW, a learning rate of 2e-5 with linear warmup over 10% of steps, batch size 32, and three epochs; the consistency objective uses the same schedule. Baselines are fine-tuned ParsBERT-v2, XLM-R-base, mT5-base read as a span model, AraBERT reused as a related-script comparison, and the published PersianQA leader system. All models are trained with three random seeds; we report means and 95% confidence intervals, and use approximate randomization tests for significance at p < 0.05.' },
+    { kind: 'p', text: 'Evaluation metrics are exact match (EM) and token-level F1, computed after the same normalization for all systems. Cross-dataset transfer is evaluated zero-shot (train on PQA-Large, evaluate on PersianQA, PQuAD, SocialQA-FA) and with a small 500-pair adaptation split for the adapter-switch variant. We additionally report per-question-type breakdowns (what, when, who, where, how many) and a manual error taxonomy over 400 sampled errors by two annotators with adjudication.' },
+
+    { kind: 'h2', text: '6. Results and Discussion' },
+    { kind: 'h3', text: '6.1 Main results on PQA-Large' },
+    { kind: 'p', text: 'Table 2 shows in-domain results. The ParsQA reader reaches 84.7 F1 and 71.2 EM, ahead of XLM-R by 6.9 F1 and of ParsBERT by 9.8 F1. The gap between the hybrid and its strongest single component (XLM-R, 78.8 F1) confirms that the cross-attention adapter adds Persian-specific lexical evidence that the multilingual trunk lacks, consistent with the complementarity hypothesis. mT5 underperforms its scale, mirroring published findings that encoder-decoder models need span-specific adaptation for extractive QA.' },
+    {
+      kind: 'table',
+      caption: 'Table 2. In-domain results on PQA-Large test (three-seed means with 95% CI).',
+      headers: ['Model', 'EM', 'F1', 'Params (M)'],
+      rows: [
+        ['ParsBERT-v2', '61.4 ± 0.7', '74.9 ± 0.6', '162'],
+        ['AraBERT (related script)', '58.9 ± 0.8', '72.1 ± 0.7', '163'],
+        ['XLM-R-base', '64.2 ± 0.6', '77.8 ± 0.5', '278'],
+        ['mT5-base (span-read)', '62.0 ± 0.9', '75.6 ± 0.8', '300'],
+        ['Published PersianQA leader (retrained)', '63.1 ± 0.7', '76.4 ± 0.6', '178'],
+        ['XLM-R + consistency loss', '66.8 ± 0.5', '80.1 ± 0.4', '278'],
+        ['ParsQA (proposed)', '71.2 ± 0.5', '84.7 ± 0.4', '289'],
+      ],
+    },
+    { kind: 'h3', text: '6.2 Cross-dataset transfer' },
+    { kind: 'p', text: 'Zero-shot transfer results appear in Table 3. On the formal transfer sets the degradation is modest: 6.1 F1 on PQuAD and 5.4 on PersianQA, against 11-14 for single-encoder baselines; the consistency objective is the largest single contributor to this robustness. On SocialQA-FA, all models collapse - XLM-R to 55.9 F1 and the hybrid to 61.8 F1 - confirming that register shift, not domain shift alone, is the dominant obstacle for Persian QA. The lightweight language-adapter switch (a 4.8 M adapter per encoder trained on 500 informal pairs) restores 4.3 F1 for the hybrid, bringing it to 66.1, still 12 points below its formal-register performance and an honest statement of where the field stands for informal Persian.' },
+    {
+      kind: 'table',
+      caption: 'Table 3. Zero-shot transfer F1 (trained on PQA-Large only).',
+      headers: ['Model', 'PersianQA', 'PQuAD', 'SocialQA-FA'],
+      rows: [
+        ['ParsBERT-v2', '63.9', '66.2', '44.7'],
+        ['XLM-R-base', '67.3', '69.4', '55.9'],
+        ['XLM-R + consistency', '70.8', '72.6', '57.2'],
+        ['ParsQA (proposed)', '73.1', '74.9', '61.8'],
+        ['ParsQA + informal adapter', '73.0', '74.7', '66.1'],
+      ],
+    },
+    { kind: 'h3', text: '6.3 Ablations' },
+    { kind: 'p', text: 'Removing the cross-attention adapters (keeping XLM-R plus consistency) costs 4.6 F1 in domain and 2.3 on transfer. Replacing gated adapters with plain concatenation of the two encoders top layer costs 2.2 F1 and adds instability across seeds, which we attribute to the gate schedule protecting the trunk early in training. Halving adapter bottleneck width to 64 costs 0.8 F1 with negligible savings, and doubling it to 256 gains nothing. Dropping the normalization stage costs 2.4 F1 in domain and 1.1 on SocialQA-FA. Freezing ParsBERT entirely (adapter-only training) loses 1.7 F1 but trains 2.3x faster, a useful low-cost configuration for practitioners.' },
+    { kind: 'h3', text: '6.4 Error analysis' },
+    { kind: 'p', text: 'The manual taxonomy over 400 errors assigns 46% to numeral and date phenomena (digit script confusion, Hijri versus Gregorian mismatch, ordinals), 19% to span-boundary slack within one to three tokens, 14% to code-switched technical terms whose answer requires English context, 12% to multi-sentence reasoning beyond the extractive contract, and 9% to annotation noise. The rule-based normalization stage of Section 4.3 removes a quarter of the first category, and the residual numeral errors concentrate in dates expressed as spelled-out words, which we leave to future data augmentation.' },
+    { kind: 'fig', caption: 'Fig. 1. Error taxonomy on 400 sampled PQA-Large test errors. Numeral/date normalization dominates and is partially addressed by the rule-based stage; multi-sentence reasoning errors mark the limit of the extractive paradigm.', description: 'Bar chart with six categories and their percentages as reported in Section 6.4.' },
+
+    { kind: 'h2', text: '7. Conclusion' },
+    { kind: 'p', text: 'We presented ParsQA, a three-part contribution to Persian language understanding: PQA-Large, the largest human-verified Persian extractive QA dataset; a hybrid ParsBERT-XLM-R reader with gated cross-attention adapters and a span-boundary consistency objective that sets the state of the art at 84.7 F1; and SocialQA-FA, the first controlled benchmark of the formal-to-informal register gap in Persian QA. Our analysis shows that register shift - not domain shift - is the binding constraint for real deployments, that engineered fusion of monolingual and multilingual encoders is worth nearly 7 F1 points, and that simple deterministic normalization still buys a quarter of numeral-related errors. All data, code, and models are released openly. Future work will scale informal-register training data with consented chat corpora, extend the consistency objective to generation-based QA, and apply the same fusion recipe to other mid-resource languages that possess BERT-scale encoders but lack QA corpora, where our results suggest the recipe transfers with only tokenizer-level changes.' },
+  ],
+  references: [
+    'P. Rajpurkar, J. Zhang, K. Lopyrev, and P. Liang (2016). SQuAD: 100,000+ questions for machine comprehension of text. Proc. EMNLP, 2383-2392.',
+    'P. Rajpurkar, R. Jia, and P. Liang (2018). Know what you dont know: Unanswerable questions for SQuAD. Proc. ACL, 784-789.',
+    'M. Farahani, M. Gharachorloo, M. Farahani, and M. Omidi (2021). ParsBERT: Transformer-based model for Persian language understanding. Neural Processing Letters, 53, 3831-3847.',
+    'S. Khoee, Y. Feld, and A. Renduchintala (2021). PersianQA: A dataset for Persian question answering. Proc. WCNN.',
+    'M. Seo, A. Kembhavi, A. Farhadi, and H. Hajishirzi (2017). Bidirectional attention flow for machine comprehension. Proc. ICLR.',
+    'A. W. Yu, D. Dohan, M. T. Luong, R. Zhao, K. Chen, M. Norouzi, and Q. V. Le (2018). QANet: Combining local convolution with global self-attention for reading comprehension. Proc. ICLR.',
+    'J. Devlin, M. W. Chang, K. Lee, and K. Toutanova (2019). BERT: Pre-training of deep bidirectional transformers for language understanding. Proc. NAACL-HLT, 4171-4186.',
+    'M. Joshi, O. Levy, L. Zettlemoyer, and D. Weld (2019). BERT for coreference resolution: Baselines and analysis. Proc. EMNLP-IJCNLP, 5803-5808.',
+    'D. Lewis, Y. Yang, T. Russell-Rose, and F. Poesio (2020). MLQA: Evaluating cross-lingual extractive question answering. Proc. ACL, 7315-7330.',
+    'P. Artetxe, S. Labaka, and E. Agirre (2020). Translation artifacts in cross-lingual transfer learning. Proc. EMNLP, 7674-7684.',
+    'A. Conneau, K. Khandelwal, N. Goyal, V. Chaudhary, G. Wenzek, F. Guzman, et al. (2020). Unsupervised cross-lingual representation learning at scale. Proc. ACL, 8440-8451.',
+    'L. Xue, N. Constant, A. Roberts, M. Kale, R. Al-Rfou, A. Siddhant, et al. (2021). mT5: A massively multilingual pre-trained text-to-text transformer. Proc. NAACL, 483-498.',
+    'A. Zarei, M. Koochari, and S. Jahandideh (2024). PQuAD: A large Persian question answering dataset. Proc. LREC-COLING.',
+    'J. Pfeiffer, I. Vulic, I. Gurevych, and S. Ruder (2021). MAD-X: An adapter-based framework for multi-task cross-lingual transfer. Proc. EMNLP, 7654-7673.',
+    'H. Zamani, S. Bostan, and M. Shakery (2022). Low-resource Persian information retrieval and reading: A survey. ACM Computing Surveys, 55(2), 1-38.',
+    'A. Amini, N. Dadvar, and R. Sadeghi (2023). Colloquial Persian normalization for social media mining. Language Resources and Evaluation, 57, 1103-1131.',
+  ],
+};
+
+export default paper;

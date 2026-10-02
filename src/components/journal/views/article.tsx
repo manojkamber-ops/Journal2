@@ -1,8 +1,8 @@
 'use client';
 
 import { useFetch, fmtNum, fmtDate } from '@/lib/journal-client';
-import { ArticleDetail } from '@/lib/journal-types';
-import { TypeBadge, ErrorBox, ListSkeleton } from '../bits';
+import { ArticleDetail, PaperBlock } from '@/lib/journal-types';
+import { TypeBadge, ErrorBox, ListSkeleton, DoiLink } from '../bits';
 import { Button } from '@/components/ui/button';
 import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
@@ -11,15 +11,117 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
-  Download, Quote, FileText, Copy, Check, ExternalLink, BookOpen, CalendarDays, Scale, Users,
+  Download, Quote, FileText, Copy, Check, ExternalLink, BookOpen, CalendarDays, Scale, Users, ListTree,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+
+// ── Full-paper block renderer ─────────────────────────────────────────────────
+function PaperBlocks({ blocks }: { blocks: PaperBlock[] }) {
+  const h2Index = new Map<string, number>();
+  let h2n = 0;
+  for (const b of blocks) if (b.kind === 'h2') h2Index.set(b.text, ++h2n);
+
+  return (
+    <div className="paper-body">
+      {blocks.map((b, i) => {
+        switch (b.kind) {
+          case 'h2':
+            return (
+              <h2
+                key={i}
+                id={`sec-${h2Index.get(b.text)}`}
+                className="mt-10 scroll-mt-28 border-b-2 border-crimson pb-1.5 text-xl font-bold text-ink first:mt-2"
+              >
+                {b.text}
+              </h2>
+            );
+          case 'h3':
+            return <h3 key={i} className="mt-7 scroll-mt-28 text-[16px] font-bold text-ink">{b.text}</h3>;
+          case 'p':
+            return <p key={i} className="mt-4 text-justify text-[15px] leading-7 text-zinc-700">{b.text}</p>;
+          case 'list':
+            return b.ordered ? (
+              <ol key={i} className="mt-4 list-decimal space-y-2 pl-7 text-[14.5px] leading-7 text-zinc-700">
+                {b.items.map((it, j) => <li key={j} className="pl-1">{it}</li>)}
+              </ol>
+            ) : (
+              <ul key={i} className="mt-4 list-disc space-y-2 pl-7 text-[14.5px] leading-7 text-zinc-700">
+                {b.items.map((it, j) => <li key={j} className="pl-1">{it}</li>)}
+              </ul>
+            );
+          case 'eq':
+            return (
+              <div key={i} className="mt-5 flex flex-wrap items-baseline justify-center gap-x-4 gap-y-1 rounded bg-zinc-50 px-4 py-3">
+                <span className="break-words font-serif text-[15px] italic text-ink">{b.text}</span>
+                {b.label ? <span className="text-sm text-zinc-400">{b.label}</span> : null}
+              </div>
+            );
+          case 'table':
+            return (
+              <figure key={i} className="mt-7">
+                <figcaption className="mb-2 text-[13px] font-bold text-ink">{b.caption}</figcaption>
+                <div className="overflow-x-auto rounded border border-zinc-300">
+                  <table className="w-full border-collapse text-left text-[12.5px]">
+                    <thead>
+                      <tr className="bg-zinc-100">
+                        {b.headers.map((h, j) => (
+                          <th key={j} className="border-b border-zinc-300 px-3 py-2 font-bold text-ink">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {b.rows.map((row, j) => (
+                        <tr key={j} className="even:bg-zinc-50/60">
+                          {row.map((c, k) => (
+                            <td key={k} className="border-b border-zinc-100 px-3 py-2 align-top text-zinc-700">{c}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {b.note ? <p className="mt-1.5 text-xs italic text-zinc-500">{b.note}</p> : null}
+              </figure>
+            );
+          case 'fig':
+            return (
+              <figure key={i} className="mt-7">
+                <div className="flex h-40 items-center justify-center rounded border border-zinc-300 bg-zinc-50">
+                  <div className="flex items-center gap-4 text-zinc-400" aria-hidden>
+                    <span className="rounded border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-500">Input</span>
+                    <span className="h-px w-10 bg-zinc-300" />
+                    <span className="rounded border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-500">Model</span>
+                    <span className="h-px w-10 bg-zinc-300" />
+                    <span className="rounded border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-500">Output</span>
+                  </div>
+                </div>
+                <figcaption className="mt-2 text-[13px] italic text-zinc-600">{b.caption}</figcaption>
+              </figure>
+            );
+          default:
+            return null;
+        }
+      })}
+    </div>
+  );
+}
 
 export function ArticleView({ id }: { id: string }) {
   const { data: a, loading, error, reload } = useFetch<ArticleDetail>(`/api/articles/${encodeURIComponent(id)}`);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+
+  const sections = useMemo(() => {
+    if (!a?.fullText) return [] as { text: string; idx: number }[];
+    const out: { text: string; idx: number }[] = [];
+    a.fullText.forEach((b, i) => { if (b.kind === 'h2') out.push({ text: b.text, idx: out.length + 1 }); });
+    return out;
+  }, [a]);
+
+  const scrollTo = (idx: number) => {
+    document.getElementById(`sec-${idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   if (loading) {
     return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6"><ListSkeleton rows={7} /></div>;
@@ -28,6 +130,10 @@ export function ArticleView({ id }: { id: string }) {
 
   const inPress = a.status === 'in_press';
   const apaText = `${a.authors.map((x, i) => `${x.name}${i < a.authors.length - 1 ? ', ' : ''}`).join('')} (${a.year}). ${a.title}. Iran Journal of Computer Science, ${a.volume}(${a.issue}), ${a.pages || 'in press'}. https://doi.org/${a.doi}`;
+  const words = a.fullText
+    ? a.fullText.reduce((n, b) => n + (b.kind === 'p' ? b.text.split(/\s+/).length : b.kind === 'list' ? b.items.join(' ').split(/\s+/).length : 0), 0)
+    : 0;
+  const readMin = Math.max(1, Math.round(words / 220));
 
   const copyApa = async () => {
     try {
@@ -61,9 +167,9 @@ export function ArticleView({ id }: { id: string }) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* ── Main column ── */}
-        <article>
+        <article className="min-w-0">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <TypeBadge type={inPress ? 'Article in Press' : a.type} />
             <a href={`#/articles?section=${encodeURIComponent(a.section)}`} className="text-xs font-semibold text-crimson hover:underline">
@@ -79,10 +185,12 @@ export function ArticleView({ id }: { id: string }) {
               {a.authorDetails.map((ad, i) => {
                 const affNo = affMap.get(`${ad.department}, ${ad.affiliation}`);
                 return (
-                  <span key={ad.id} className="whitespace-nowrap">
-                    <span className="font-semibold text-ink">{ad.givenName} {ad.familyName}</span>
-                    {ad.isCorresponding ? <span className="text-crimson">*</span> : null}
-                    <sup className="text-[11px] text-crimson">{affNo}</sup>
+                  <span key={ad.id}>
+                    <span className="whitespace-nowrap">
+                      <span className="font-semibold text-ink">{ad.givenName} {ad.familyName}</span>
+                      {ad.isCorresponding ? <span className="text-crimson">*</span> : null}
+                      <sup className="text-[11px] text-crimson">{affNo}</sup>
+                    </span>
                     {i < a.authorDetails.length - 1 ? ', ' : ''}
                   </span>
                 );
@@ -108,6 +216,25 @@ export function ArticleView({ id }: { id: string }) {
           </div>
 
           <hr className="my-6 border-zinc-200" />
+
+          {/* DOI + access bar */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-crimson/20 bg-crimson-light/50 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
+              <span className="flex items-center gap-1.5 text-zinc-500">
+                <FileText className="h-3.5 w-3.5 text-crimson" aria-hidden /> DOI:
+                <DoiLink doi={a.doi} articleId={a.id} href={`/api/articles/${encodeURIComponent(a.id)}/pdf`} external className="!text-[12px]" />
+              </span>
+              <span className="text-zinc-500">{a.pdfPages} pages · ~{readMin} min read · Open access</span>
+            </div>
+            <a
+              href={`/api/articles/${encodeURIComponent(a.id)}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md bg-crimson px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-crimson-dark"
+            >
+              <Download className="h-3.5 w-3.5" aria-hidden /> Full text PDF
+            </a>
+          </div>
 
           {/* Abstract */}
           <section aria-labelledby="abstract-h">
@@ -137,8 +264,16 @@ export function ArticleView({ id }: { id: string }) {
             <div><dt className="font-semibold text-zinc-500">Published</dt><dd className="text-zinc-700">{fmtDate(a.publishedDate)}</dd></div>
           </dl>
 
+          {/* ── Full paper body ── */}
+          {a.fullText && a.fullText.length > 0 && (
+            <section className="mt-8" aria-label="Full text">
+              <h2 className="sr-only">Full text</h2>
+              <PaperBlocks blocks={a.fullText} />
+            </section>
+          )}
+
           {/* References */}
-          <section className="mt-8" aria-labelledby="refs-h">
+          <section className="mt-10" aria-labelledby="refs-h">
             <h2 id="refs-h" className="text-lg font-bold text-ink">References</h2>
             <p className="mt-1 text-xs text-zinc-400">{a.references.length} references</p>
             <Accordion type="single" collapsible className="mt-2">
@@ -195,6 +330,25 @@ export function ArticleView({ id }: { id: string }) {
             </p>
           </section>
 
+          {sections.length > 2 && (
+            <section className="rounded-lg border border-zinc-200 p-5">
+              <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500">
+                <ListTree className="h-4 w-4 text-crimson" aria-hidden /> On this page
+              </h3>
+              <nav aria-label="Article sections" className="mt-3 space-y-1.5">
+                {sections.map(s => (
+                  <button
+                    key={s.idx}
+                    onClick={() => scrollTo(s.idx)}
+                    className="block w-full truncate text-left text-[12.5px] text-zinc-600 transition-colors hover:text-crimson"
+                  >
+                    {s.text}
+                  </button>
+                ))}
+              </nav>
+            </section>
+          )}
+
           <section className="rounded-lg border border-zinc-200 p-5">
             <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500">
               <Quote className="h-4 w-4 text-crimson" aria-hidden /> Article metrics
@@ -219,11 +373,18 @@ export function ArticleView({ id }: { id: string }) {
             <dl className="mt-3 space-y-2.5">
               <div>
                 <dt className="text-zinc-400">DOI</dt>
-                <dd className="break-all font-mono text-[12px] text-crimson">https://doi.org/{a.doi}</dd>
+                <dd className="break-all"><DoiLink doi={a.doi} articleId={a.id} href={`/api/articles/${encodeURIComponent(a.id)}/pdf`} external className="!text-[12px]" /></dd>
               </div>
               <div>
                 <dt className="text-zinc-400">Journal</dt>
                 <dd className="text-zinc-700">Iran J Comput Sci {a.volume}({a.issue}){a.pages ? `, pp. ${a.pages}` : ''}</dd>
+              </div>
+              <div>
+                <dt className="text-zinc-400">Indexed in</dt>
+                <dd className="flex items-center gap-1 text-zinc-700">
+                  <span className="inline-flex items-center gap-1 rounded bg-scopus/90 px-1.5 py-0.5 text-[10px] font-bold text-white">Scopus</span>
+                  2018–2026
+                </dd>
               </div>
               <div>
                 <dt className="text-zinc-400">License</dt>

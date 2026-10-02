@@ -28,6 +28,7 @@ model Article {
   downloads          Int
   pdfPages           Int
   references         String // JSON string[]
+  fullText           String @default("[]") // JSON PaperBlock[] — complete paper body
   correspondingEmail String
   authors            ArticleAuthor[]
 

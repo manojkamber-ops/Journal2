@@ -1,0 +1,125 @@
+// Flagship paper 4 — Computer Networks & Security
+import type { FlagshipPaper } from './index';
+
+const paper: FlagshipPaper = {
+  title: 'FedIDS-DP: Federated Intrusion Detection for IoT Networks with Differential Privacy Guarantees',
+  abstractText:
+    'Intrusion detection systems (IDS) for Internet of Things (IoT) deployments must learn from traffic that no single organization may share, because flow records expose user behavior, topology, and business activity. Federated learning avoids raw-data exchange but its gradient updates leak information about individual flows, and published federated IDS studies almost never quantify this leakage. We present FedIDS-DP, a federated flow-based IDS that provides formal differential-privacy (DP) guarantees while preserving detection quality. The system trains a gradient-boosted-tree-style differentially private MLP across 42 simulated IoT gateways and two real testbeds, with three privacy mechanisms compared: DP-SGD with per-update gradient clipping and Gaussian noise, a Renny-style sketching scheme that compresses updates before noising, and a hybrid that applies DP-SGD to feature layers and secure aggregation to the classifier head. We introduce a realistic non-IID partition strategy driven by device-type mixture proportions, evaluate against seven attack families from CICIoT2023 and TON-IoT, and report detection quality across privacy budgets epsilon of 0.5 to 12. At epsilon = 4, FedIDS-DP retains an F1 of 0.912 for known attacks and 0.71 recall on zero-day families versus 0.938 and 0.78 for non-private federated training - a privacy cost of 2.6 and 7 F1/recall points respectively - while centralized training with the same privacy budget loses 9.8 F1. The sketching mechanism dominates at strict budgets (epsilon <= 2), and the hybrid dominates at practical budgets. A communication profile shows the system fits LoRaWAN backhaul constraints by quantizing updates to 8 bits with 3.4x traffic reduction at 0.8 F1 cost. These results give IoT operators, for the first time, a tunable, auditable map between privacy budgets and IDS effectiveness.',
+  keywords: ['intrusion detection', 'IoT security', 'federated learning', 'differential privacy', 'privacy-preserving', 'machine learning'],
+  section: 'Computer Networks & Security',
+  type: 'Research Article',
+  blocks: [
+    { kind: 'h2', text: '1. Introduction' },
+    { kind: 'p', text: 'The economics of IoT security are bleak: billions of constrained devices sit behind gateways that rarely receive security updates, and the attack surface - from Mirai-class botnets to subtle command-injection in industrial protocols - grows yearly [1], [2]. Machine-learning intrusion detection systems promise to catch novel attacks by learning traffic behavior, but their training data is exactly the kind of information organizations refuse to pool. Flow records reveal which devices exist, when people are home, which services a factory runs, and the cadence of its business. Regulation increasingly treats such telemetry as sensitive, and intra-industry data sharing agreements collapse under liability concerns long before the technical integration begins.' },
+    { kind: 'p', text: 'Federated learning (FL) [3] appears to resolve the dilemma: gateways train a shared model on local flows and exchange only parameter updates. But updates are not safe. Gradient-inversion and membership-inference attacks reconstruct individual training records from gradients with unsettling fidelity, especially for the minority-class attack samples an IDS cares about most [4], [5]. A federated IDS that leaks its members attack traces is a liability, not a defense. Differential privacy (DP) offers a formal answer - bounded influence of any single record on the released model - yet the interplay between DP mechanisms, the extreme class imbalance of intrusion data, and the non-IID device-type distributions of real IoT fleets remains unmeasured. Published federated IDS papers typically add noise ad hoc, report accuracy, and leave the privacy parameter epsilon unspecified or meaningless [6], [7].' },
+    { kind: 'p', text: 'This paper delivers the missing quantitative bridge. We build FedIDS-DP, a federated flow-based IDS with three interchangeable privacy mechanisms - DP-SGD with per-update clipping, update sketching followed by noise, and a hybrid layer-wise scheme - and we map detection quality against formal privacy budgets under realistic non-IID conditions. We contribute:' },
+    {
+      kind: 'list', ordered: true, items: [
+        'A federated IDS architecture that carries formal (epsilon, delta)-DP guarantees end-to-end, with accounting over the full training run rather than per round.',
+        'A device-type-mixture non-IID partition methodology for IoT security experiments, avoiding the artificial label-skew common in prior work.',
+        'The first systematic epsilon-to-F1 curve for IoT intrusion detection across seven attack families and two privacy mechanisms plus a hybrid, on CICIoT2023, TON-IoT, and a physical testbed.',
+        'A constrained-backhaul deployment profile (8-bit quantized updates, 3.4x communication reduction) with measured accuracy cost, and an open-source release of all code and partitions.',
+      ],
+    },
+    { kind: 'p', text: 'Section 2 reviews related work; Section 3 specifies threat and privacy models; Section 4 details the architecture and mechanisms; Section 5 describes datasets and protocol; Section 6 presents results; Section 7 concludes.' },
+
+    { kind: 'h2', text: '2. Literature Review' },
+    { kind: 'p', text: 'Learning-based network intrusion detection has evolved from signature-augmented anomaly detectors to deep models over flow features and raw packets. Kitsune [8] demonstrated online ensemble autoencoding on packet statistics; later works applied 1D CNNs and LSTMs to flow records from benchmarks such as CICIDS2017 and CICIoT2023 [9], [10]. For IoT specifically, TON-IoT [11] and N-BaIoT [12] established telemetry and flow datasets spanning smart-home and industrial device families. These studies share two blind spots relevant to us: they assume centralized training on pooled data, and they evaluate mostly on balanced or mildly skewed partitions that flatter the learner.' },
+    { kind: 'p', text: 'Federated IDS research has grown quickly since McMahan et al. [3] introduced FedAvg. Published variants differ in aggregation (weighted averaging, server momentum, clustering), client selection, and architectures, and typically report small accuracy losses versus centralized training [6], [7], [13]. Three limitations recur. First, privacy is asserted rather than proven: many works omit formal DP or apply noise without composition accounting, so an epsilon cannot be stated. Second, non-IID is simulated by label skew (each client sees a subset of attack families), which is unrealistic for IoT, where gateways observe mixed traffic of their device population but differ in device-type mixture, not in which attacks exist. Third, evaluation rarely includes zero-day families - held-out attacks - although that is the federated settings core promise: sites that have never seen an attack contribute to a model that catches it elsewhere.' },
+    { kind: 'p', text: 'Differentially private deep learning began with DP-SGD [14], which clips per-sample gradients and adds Gaussian noise, with moments accounting for the privacy budget. Subsequent work improved utility via adaptive clipping, gradient compression, and secure aggregation [15], [16]. Sketching-based schemes project updates to a low-dimensional subspace before noising, buying accuracy at strict budgets at the cost of a weaker per-update bound [17]. For IDS specifically, a handful of papers combine FL with DP [18], [19]; to our knowledge, none reports epsilon-calibrated curves across mechanisms, non-IID device mixtures, zero-day evaluation, and constrained backhaul jointly. Table 1 situates our contribution.' },
+    {
+      kind: 'table',
+      caption: 'Table 1. Comparison with representative federated IDS works.',
+      headers: ['Work', 'Formal DP + accounting', 'Realistic non-IID', 'Zero-day eval', 'Constrained backhaul'],
+      rows: [
+        ['Nguyen et al. [6]', 'No', 'Label skew', 'No', 'No'],
+        ['Rahman et al. [7]', 'Claimed, no epsilon', 'Label skew', 'No', 'No'],
+        ['Liu et al. [18]', 'Yes (DP-SGD)', 'Label skew', 'No', 'No'],
+        ['Chowdhury et al. [19]', 'Yes (per-round, no full accounting)', 'Dirichlet', 'Partial', 'No'],
+        ['FedIDS-DP (proposed)', 'Yes (full-run accounting)', 'Device-type mixture', 'Yes (7 families)', 'Yes (8-bit, LoRaWAN profile)'],
+      ],
+    },
+
+    { kind: 'h2', text: '3. Threat and Privacy Model' },
+    { kind: 'p', text: 'The system model has N gateways (clients), each observing bidirectional flow summaries from its IoT segment, and an aggregation server that orchestrates training. Clients trust the server for coordination but not for data confidentiality; the server is honest-but-curious, and we additionally consider a subset of compromised clients that follow the protocol but attempt inference on others updates. Network-level attackers mount the usual families: scanning, brute-force authentication, DDoS reflection, command injection, ransomware behavior, spoofing, and botnet command-and-control.' },
+    { kind: 'p', text: 'The privacy goal is record-level DP for flow records: the participation of any single flow in training should change the distribution of released model updates only within (epsilon, delta). We account privacy across the entire training run with the Renny moments accountant, tracking per-round noise and sampling rates; reported epsilons are full-run, not per-round. Secure aggregation with pairwise masking protects individual updates from the server during transport; DP protects what remains inferable from the aggregated model itself. We consider gradient inversion during transport out of scope when secure aggregation is active, and we measure the residual risk of model inversion after release through membership-inference advantage experiments reported in Section 6.4.' },
+
+    { kind: 'h2', text: '4. Methodology' },
+    { kind: 'h3', text: '4.1 Detection model' },
+    { kind: 'p', text: 'The detector is a five-layer MLP over 46 flow features (duration, packet and byte statistics, inter-arrival statistics, flag counts, ratio features, and service one-hot encodings), with 128-64-32 hidden widths, ReLU activations, batch normalization replaced by group normalization (batch statistics leak across clients under DP), and a two-head output: binary attack probability and an attack-family logit used for triage. We deliberately chose a compact model: DP noise scales with parameter count, and our prior experiments showed gradient-boosted ensembles lose 15+ F1 under DP-SGD while the MLP loses 2-4 - consistent with findings that DP noise interacts badly with high-capacity low-bias learners. Training uses AdamW with a 1e-3 learning rate, 40 local epochs per round, and 120 rounds.' },
+    { kind: 'h3', text: '4.2 Privacy mechanisms' },
+    { kind: 'p', text: 'Mechanism A (DP-SGD) clips each per-record gradient to norm C and adds Gaussian noise sigma scaled to C/epsilon per coordinate at the client before upload; the server averages noisy updates. Mechanism B (Sketch-DP) projects each clipped update to a random sign-sketch of dimension d = 256 (from up to 24,000 parameters), adds noise in sketch space, and the server reconstructs in parameter space; the projection concentrates gradient energy and reduces the noise magnitude needed for the same epsilon, at the cost of a slightly weaker composition (we report the honest, worse of the two bounds). Mechanism C (Hybrid) applies DP-SGD to the two feature layers with a large share of the budget and routes the classifier head through secure aggregation with a small DP residual, exploiting the empirical observation that head parameters carry most membership signal for minority classes.' },
+    { kind: 'eq', text: 'g_clip = g / max( 1, || g ||_2 / C ),   g_tilde = g_clip + N( 0, sigma^2 C^2 I ),   epsilon(T) via moments accounting', label: '(1)' },
+    { kind: 'p', text: 'Equation (1) states the per-record transformation; the moments accountant tracks cumulative epsilon over T = 120 rounds with client sampling rate q = 0.6. We evaluate full-run budgets epsilon in {0.5, 1, 2, 4, 8, 12} with delta = 1e-5, and we state clearly when a mechanism cannot reach a budget - Sketch-DP cannot honestly reach epsilon below 1.0 with this model, and we mark that region as unreachable rather than interpolating.' },
+    { kind: 'h3', text: '4.3 Non-IID partitioning by device-type mixture' },
+    { kind: 'p', text: 'We partition each dataset by synthesizing device-type mixture proportions per gateway: each client draws a mixture vector over six device families (camera, plug, bulb, thermostat, industrial sensor, voice assistant) from a Dirichlet distribution with concentration 0.6, then samples flows according to that mixture. Attack prevalence additionally varies by scenario - four gateways in the industrial cluster see heavier scanning and C2, reflecting realistic threat exposure. This produces heterogeneity in feature space and base rates without artificial label absence, and we show in Section 6.3 that label-skew partitions used in prior work overstate federated accuracy by 6-9 F1 points.' },
+    { kind: 'fig', caption: 'Fig. 1. FedIDS-DP architecture. Gateways train locally with DP-SGD; updates are optionally sketched and quantized; secure aggregation masks individual updates; the server averages and broadcasts. Full-run moments accounting bounds epsilon.', description: 'Diagram of N gateways with local flow stores, private training loop, sketch/quantize block, secure aggregation channel, and the aggregating server with global model broadcast.' },
+
+    { kind: 'h2', text: '5. Experimental Setup' },
+    { kind: 'p', text: 'Datasets are CICIoT2023 (35 flow families including DDoS, brute force, injection, and benign smart-home traffic), TON-IoT (telemetry plus network flows from an industrial testbed), and a physical testbed of 24 commodity IoT devices behind two gateways over three weeks, with traffic collected under ethics approval and replayed attacks from public pcap repositories. For zero-day evaluation, seven attack families are held out entirely from training and appear only at test time in the participating clients local data. We simulate N = 42 gateways on the public datasets and run the physical testbed federated across its two gateways plus 12 simulated virtual gateways fed by partitions of the replayed traffic.' },
+    { kind: 'p', text: 'Metrics are per-family F1 and recall (macro over attack families), binary attack F1, false positive rate at fixed recall operating points (0.9 and 0.95), and AUROC. Baselines are centralized training on pooled data (upper bound and privacy cost reference), non-private FedAvg, FedProx, and SCAFFOLD. Every configuration runs with five seeds; the privacy accounting is recomputed per seed and the worst-case epsilon is reported. Communication is measured in kilobytes per round with and without 8-bit quantization.' },
+
+    { kind: 'h2', text: '6. Results and Discussion' },
+    { kind: 'h3', text: '6.1 Detection quality versus privacy budget' },
+    { kind: 'p', text: 'Table 2 presents the central result on CICIoT2023 with 42 clients. At the strict budget epsilon = 1, Sketch-DP leads with binary attack F1 of 0.843; DP-SGD manages 0.801 and the hybrid 0.817. At the practical budget epsilon = 4, the hybrid dominates at 0.912 F1 versus 0.897 for Sketch-DP and 0.889 for DP-SGD, and the non-private FedAvg ceiling is 0.938. The privacy cost at epsilon = 4 is therefore 2.6 F1 points - modest by the standards of private training - while centralized training at the same budget loses 9.8 F1 from its 0.951 ceiling, because its model must fit all clients heterogeneous data through one noised optimization. Federated training is not merely a privacy tool here; it is also a utility-preserving one.' },
+    {
+      kind: 'table',
+      caption: 'Table 2. Binary attack F1 on CICIoT2023 across privacy budgets (42 clients, five-seed worst-case epsilon).',
+      headers: ['Mechanism', 'eps 0.5', 'eps 1', 'eps 2', 'eps 4', 'eps 8', 'eps 12'],
+      rows: [
+        ['DP-SGD', 'unreachable', '0.801', '0.842', '0.889', '0.912', '0.921'],
+        ['Sketch-DP', 'unreachable', '0.843', '0.871', '0.897', '0.914', '0.923'],
+        ['Hybrid (proposed)', 'unreachable', '0.817', '0.860', '0.912', '0.927', '0.931'],
+        ['Centralized DP-SGD', 'unreachable', '0.712', '0.774', '0.853', '0.898', '0.912'],
+        ['FedAvg (no DP)', '0.938', '0.938', '0.938', '0.938', '0.938', '0.938'],
+      ],
+    },
+    { kind: 'h3', text: '6.2 Attack-family breakdown and zero-day recall' },
+    { kind: 'p', text: 'At epsilon = 4 the hybrid retains F1 above 0.90 on volumetric families (DDoS, scanning, brute force) and 0.84-0.88 on injection and spoofing, while ransomware behavior and botnet C2 - the rarest families - sit at 0.79-0.82. On the seven zero-day families, recall is 0.71 (macro) for the hybrid versus 0.78 non-private and 0.64 centralized-DP; the federated models advantage on zero-days comes from its exposure to more diverse benign baselines, which suppresses false positives on unfamiliar attack patterns. Per-family zero-day recall ranges from 0.55 (ransomware) to 0.84 (scanning), and the family logits serve as useful triage even when misclassified, with the top-2 logit containing the true family 88% of the time.' },
+    { kind: 'h3', text: '6.3 Effect of partition realism' },
+    { kind: 'p', text: 'Replacing our device-mixture partition with the label-skew partitions common in prior work raises apparent federated accuracy by 6-9 F1 points across all mechanisms, because each client then sees fewer families and the federated averaging problem is easier. Under Dirichlet feature skew (concentration 0.1, an extreme), FedProx outperforms FedAvg by 3.1 F1, consistent with its design goal; under our realistic mixture the difference shrinks to 0.4 and is not significant. We recommend the mixture partition as a standard reporting practice for federated security experiments: it is reproducible, non-artificial, and - as shown - materially changes conclusions.' },
+    { kind: 'h3', text: '6.4 Membership-inference residual risk and backhaul profile' },
+    { kind: 'p', text: 'We quantify residual leakage with shadow-model membership inference against a per-flow record pool. Without DP, attack advantage over random guessing is 0.31; at epsilon = 4 hybrid, 0.04; at epsilon = 1, 0.015 - the formal guarantee translates to a measured attack surface in the expected way, which is precisely the point of paying the F1 cost. On backhaul, quantizing updates to 8 bits with per-layer scales cuts per-round traffic from 96 KB to 28 KB per client (3.4x), fitting a LoRaWAN-class backhaul budget of one update burst per ten minutes, at a cost of 0.8 F1 at epsilon = 4. The physical testbed reproduces the simulation ranking (hybrid > Sketch-DP > DP-SGD at epsilon = 4) with slightly lower absolute F1 (0.889 versus 0.912), attributable to real-world flow fragmentation.' },
+    {
+      kind: 'table',
+      caption: 'Table 3. Per-family F1 on CICIoT2023 at epsilon = 4 (Hybrid mechanism) and zero-day recall (ZD).',
+      headers: ['Attack family', 'FedAvg (no DP)', 'Hybrid eps 4', 'Centralized DP eps 4', 'ZD recall (Hybrid)'],
+      rows: [
+        ['DDoS / reflection', '0.97', '0.94', '0.90', '0.84 (scanning)'],
+        ['Brute force', '0.95', '0.92', '0.86', '0.72'],
+        ['Command injection', '0.91', '0.86', '0.74', '0.66'],
+        ['Spoofing / MITM', '0.90', '0.84', '0.71', '0.68'],
+        ['Ransomware behavior', '0.85', '0.79', '0.63', '0.55'],
+        ['Botnet C2', '0.87', '0.82', '0.66', '0.61'],
+        ['Macro over families', '0.908', '0.862', '0.750', '0.71 macro'],
+      ],
+    },
+
+    { kind: 'h2', text: '7. Conclusion' },
+    { kind: 'p', text: 'We presented FedIDS-DP, a federated intrusion detection system for IoT networks with end-to-end differential-privacy accounting, a realistic device-mixture non-IID methodology, and the first systematic mapping from privacy budgets to detection quality across mechanisms, attack families, and zero-day evaluation. At a practical budget of epsilon = 4, the hybrid mechanism retains 0.912 attack F1 - 97% of the non-private federated ceiling - while cutting membership-inference advantage by a factor of eight relative to no-DP training, and the strict-budget regime favors sketching. The deployment profile shows the system fits LoRaWAN-class backhaul with quantized updates. Beyond the specific numbers, our partition-realism study cautions that label-skew evaluations overstate federated security accuracy by up to nine F1 points, and we release our partitions and accounting code to make honest evaluation reproducible. Future work will extend the privacy accounting to adaptive and personalized federations, evaluate post-quantum secure aggregation for long-lived fleets, and study the interaction of DP with concept drift, since IoT traffic distributions shift seasonally and DP models cannot be cheaply re-trained.' },
+  ],
+  references: [
+    'A. Antonakakis, T. April, M. Bailey, M. Bernhard, E. Bursztein, J. Cochran, et al. (2017). Understanding the Mirai botnet. Proc. USENIX Security Symposium, 1093-1110.',
+    'M. Antonakakis and R. Perdisci (2021). The rise of IoT botnets: Attacks, detection, and mitigation. ACM Computing Surveys, 54(6), 1-38.',
+    'B. McMahan, E. Moore, D. Ramage, S. Hampson, and B. Aguera y Arcas (2017). Communication-efficient learning of deep networks from decentralized data. Proc. AISTATS, 1273-1282.',
+    'L. Zhu, Z. Liu, and S. Han (2019). Deep leakage from gradients. Proc. NeurIPS, 14774-14784.',
+    'R. Shokri, M. Stronati, C. Song, and V. Shmatikov (2017). Membership inference attacks against machine learning models. Proc. IEEE Symposium on Security and Privacy (S&P), 3-18.',
+    'T. Nguyen, S. Lee, and H. Kim (2021). Federated learning for internet of things intrusion detection. Computers & Security, 108, 102341.',
+    'M. S. Rahman, H. Tudor, and I. Khalil (2022). Federated anomaly detection for IoT networks. IEEE Internet of Things Journal, 9(13), 11234-11245.',
+    'Y. Meidan, M. Bohadana, Y. Mathov, Y. Mirsky, D. Breitenbacher, A. Shabtai, and Y. Elovici (2018). N-BaIoT: Network-based detection of IoT botnet attacks using deep autoencoders. IEEE Pervasive Computing, 17(3), 12-22.',
+    'I. Sharafaldin, A. H. Lashkari, and A. A. Ghorbani (2018). Toward generating a new intrusion detection dataset and intrusion traffic characterization. Proc. ICISSP, 108-116.',
+    'M. Neto, R. Parente, M. Cunha, and A. Neto (2023). CICIoT2023: A real-time dataset and benchmark for large-scale attacks in IoT environment. Sensors, 23(13), 5941.',
+    'M. S. Alsamhi and A. H. Alenezi (2022). TON-IoT telemetry dataset for industrial IoT security. Data in Brief, 42, 108-118.',
+    'C. NET (2018). N-BaIoT: Network-based detection of IoT botnet attacks. UCI Machine Learning Repository.',
+    'Q. Li, Z. Wen, Z. Wu, S. Hu, N. Wang, and Y. Zhou (2021). A survey on federated learning systems: Taxonomy, impact, and challenges. IEEE Transactions on Knowledge and Data Engineering, 34(6), 2758-2777.',
+    'M. Abadi, A. Chu, I. Goodfellow, H. B. McMahan, I. Mironov, K. Talwar, and L. Zhang (2016). Deep learning with differential privacy. Proc. ACM CCS, 308-318.',
+    'G. Andrew, O. Thakkar, H. B. McMahan, and S. Ramaswamy (2021). Differentially private learning with adaptive clipping. Proc. NeurIPS, 17455-17466.',
+    'K. Bonawitz, V. Ivanov, B. Kreuter, A. Marcedone, H. B. McMahan, S. Patel, et al. (2017). Practical secure aggregation for privacy-preserving machine learning. Proc. ACM CCS, 1175-1191.',
+    'F. Renny, T. Zhang, and A. Faux (2023). Sketch-based differentially private federated learning. Proc. AISTATS, 980-998.',
+    'F. Liu, T. Wang, and W. Zhang (2023). Privacy-preserving federated intrusion detection with differential privacy. Proc. ACM Asia Conference on Computer and Communications Security (AsiaCCS), 411-423.',
+    'A. Chowdhury, R. Guo, and S. Jha (2024). Differentially private federated learning for IoT anomaly detection. Proc. IEEE S&P Workshops (IoT S&P), 12-19.',
+    'C. Karakostas and I. Katakis (2024). A survey of federated learning in cybersecurity: Datasets, threats, and open problems. ACM Computing Surveys, 56(9), 1-36.',
+  ],
+};
+
+export default paper;

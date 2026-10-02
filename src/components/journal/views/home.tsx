@@ -43,7 +43,7 @@ export function HomeView() {
               artificial intelligence, computer vision, networks and security, software engineering, and data science.
               Since 2018 the journal has been covered in <strong>Scopus</strong>, offering rapid review (median 38 days
               to first decision), continuous open access under CC&nbsp;BY&nbsp;4.0, and worldwide discoverability through
-              Springer Nature.
+              major indexing databases.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <IndexBadge name="Scopus (2018–2026)" />

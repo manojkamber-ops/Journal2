@@ -45,7 +45,7 @@ export function Footer() {
           </div>
           <p className="mt-4 text-[13px] leading-relaxed text-zinc-400">
             A quarterly, fully open-access journal covering all areas of computer science.
-            Indexed in Scopus, Web of Science (ESCI) and DOAJ. Published by Springer Nature.
+            Indexed in: Scopus (2018–2026), Web of Science (ESCI) and DOAJ.
           </p>
           <p className="mt-3 font-mono text-xs text-zinc-500">ISSN 2520-8438 · eISSN 2520-8446</p>
         </div>
@@ -102,7 +102,11 @@ export function Footer() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-[12px] text-zinc-500 sm:flex-row sm:px-6">
           <p>© 2018–2026 Iran Journal of Computer Science. All articles licensed under CC BY 4.0.</p>
           <p className="flex items-center gap-2">
-            <span className="font-semibold text-zinc-400">Part of</span> <span className="font-bold text-white">Springer Nature</span>
+            <span className="font-semibold text-zinc-400">Indexed in:</span>
+            <span className="inline-flex items-center gap-1.5 rounded bg-scopus/90 px-2 py-0.5 font-bold text-white">
+              <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> Scopus
+            </span>
+            <span className="text-zinc-500">2018–2026</span>
           </p>
         </div>
       </div>
