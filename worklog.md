@@ -137,3 +137,19 @@ Work Log:
 
 Stage Summary:
 - The uploaded official cover now serves as the brand everywhere: header masthead logo, footer logo, homepage hero "Current issue cover" card, and favicon/favicon-touch icons — one consistent cover-based identity across the site.
+
+---
+Task ID: 8
+Agent: Main agent (Super Z)
+Task: "Whenever submitted or Join after filling the information show a message that successfully submitted or Submitted" — explicit success confirmation after every form submission.
+
+Work Log:
+- Audited all forms: only two collect user data (header search + articles filter are navigation-only). Enhanced both:
+- Contact form (views/contact.tsx): success panel heading is now "Submitted successfully ✓" (bold, larger) with "Thank you — your message was received." in emerald-700, plus the reply-time note and "Send another message" reset button; toast retitled "Submitted successfully"; panel gets role="status" for accessibility.
+- Newsletter footer (footer.tsx): added persistent inline success line below the Join form — green CheckCircle2 icon + "Submitted successfully — you will now receive table-of-contents alerts." (role="status"); message clears automatically when the user types a new email; toast retitled "Submitted successfully".
+- E2E verified with agent-browser: filled and submitted the contact form -> green panel + toast visible (audit/contact-success.png); joined the newsletter from the footer -> inline message + toast visible (audit/newsletter-success.png). No page errors; the "1 Issue" badge is the Next.js dev-mode indicator, absent in production.
+- Selector gotchas recorded: first form[type=submit] on the page is the header search (clicking it navigates away) — tests must target the form via field .closest('form').
+- Housekeeping: removed the 2 test rows (1 contact message, 1 newsletter subscriber) via scripts/cleanup-test-rows.ts; bun run lint clean.
+
+Stage Summary:
+- Both submission forms now confirm success explicitly: Contact shows a persistent green "Submitted successfully ✓" panel with a reset action; Newsletter Join shows a persistent green inline confirmation under the form — in addition to the "Submitted successfully" toasts.

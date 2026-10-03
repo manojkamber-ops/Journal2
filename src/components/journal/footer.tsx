@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { JournalLogo, OaBadge } from './bits';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Mail } from 'lucide-react';
+import { Send, Mail, CheckCircle2 } from 'lucide-react';
 
 export function Footer() {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
 
   const subscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +24,11 @@ export function Footer() {
         body: JSON.stringify({ email: email.trim() }),
       });
       if (!r.ok) throw new Error();
-      toast({ title: 'Subscribed', description: 'You will now receive table-of-contents alerts.' });
+      setSubscribed(true);
+      toast({ title: 'Submitted successfully', description: 'You will now receive table-of-contents alerts.' });
       setEmail('');
     } catch {
+      setSubscribed(false);
       toast({ title: 'Subscription failed', description: 'Please enter a valid email address.', variant: 'destructive' });
     } finally {
       setBusy(false);
@@ -83,7 +86,7 @@ export function Footer() {
               type="email"
               required
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => { setEmail(e.target.value); setSubscribed(false); }}
               placeholder="you@university.edu"
               className="h-9 border-zinc-600 bg-zinc-800 text-zinc-100 placeholder:text-zinc-500"
               aria-label="Email address"
@@ -92,6 +95,12 @@ export function Footer() {
               <Send className="h-3.5 w-3.5" aria-hidden /> {busy ? '…' : 'Join'}
             </Button>
           </form>
+          {subscribed && (
+            <p role="status" className="mt-2 flex items-start gap-1.5 text-[12.5px] font-semibold text-emerald-400">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+              Submitted successfully — you will now receive table-of-contents alerts.
+            </p>
+          )}
           <a href="#/contact" className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-zinc-400 hover:text-white">
             <Mail className="h-3.5 w-3.5" aria-hidden /> office@ijcs.ir
           </a>

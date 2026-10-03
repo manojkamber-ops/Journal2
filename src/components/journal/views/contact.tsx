@@ -33,7 +33,7 @@ export function ContactView() {
       }
       setSent(true);
       setForm({ name: '', email: '', subject: '', message: '' });
-      toast({ title: 'Message sent', description: 'The editorial office will reply within 2 working days.' });
+      toast({ title: 'Submitted successfully', description: 'The editorial office will reply within 2 working days.' });
     } catch (err) {
       toast({
         title: 'Could not send message',
@@ -64,9 +64,10 @@ export function ContactView() {
         <section aria-labelledby="form-h">
           <h2 id="form-h" className="text-lg font-bold text-ink">Send us a message</h2>
           {sent ? (
-            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
+            <div role="status" className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
               <Send className="mx-auto h-8 w-8 text-emerald-600" aria-hidden />
-              <p className="mt-2 font-semibold text-ink">Thank you — your message was received.</p>
+              <p className="mt-2 text-lg font-bold text-ink">Submitted successfully ✓</p>
+              <p className="mt-1 font-semibold text-emerald-700">Thank you — your message was received.</p>
               <p className="mt-1 text-sm text-zinc-600">We reply to all enquiries within two working days.</p>
               <Button variant="outline" size="sm" className="mt-4" onClick={() => setSent(false)}>
                 Send another message
