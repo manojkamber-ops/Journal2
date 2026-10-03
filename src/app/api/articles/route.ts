@@ -37,9 +37,12 @@ export async function GET(req: NextRequest) {
     }
 
     let orderBy: Prisma.ArticleOrderByWithRelationInput[];
+    // NOTE: within-issue order uses { id: 'asc' } because page ranges are strings
+    // ("1-9" vs "10-16" sort wrongly); IDs are zero-padded, assigned in generation
+    // order, and generation order == page order within an issue.
     switch (sort) {
       case 'oldest':
-        orderBy = [{ year: 'asc' }, { volume: 'asc' }, { issue: 'asc' }, { pages: 'asc' }];
+        orderBy = [{ year: 'asc' }, { volume: 'asc' }, { issue: 'asc' }, { id: 'asc' }];
         break;
       case 'cited':
         orderBy = [{ citations: 'desc' }];
@@ -48,7 +51,7 @@ export async function GET(req: NextRequest) {
         orderBy = [{ downloads: 'desc' }];
         break;
       default:
-        orderBy = [{ year: 'desc' }, { volume: 'desc' }, { issue: 'desc' }, { pages: 'asc' }];
+        orderBy = [{ year: 'desc' }, { volume: 'desc' }, { issue: 'desc' }, { id: 'asc' }];
     }
 
     const [total, articles] = await Promise.all([

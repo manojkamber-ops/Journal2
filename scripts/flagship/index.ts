@@ -3,6 +3,17 @@
 // Methodology, Experimental Setup, Results & Discussion, Conclusion, References.
 import type { PaperBlock } from '../../src/lib/journal-types';
 
+export interface FlagshipAuthor {
+  givenName: string;
+  familyName: string;
+  orcid: string; // '' when the manuscript does not provide one
+  affiliation: string;
+  department: string;
+  country: string;
+  email: string;
+  corresponding?: boolean;
+}
+
 export interface FlagshipPaper {
   title: string;
   abstractText: string;
@@ -11,8 +22,15 @@ export interface FlagshipPaper {
   type: string;
   blocks: PaperBlock[];
   references: string[];
+  // Real author list from an uploaded manuscript (fp0). When present the seed
+  // uses these authors verbatim instead of pool-picked fictional authors.
+  authors?: FlagshipAuthor[];
+  // Real manuscript dates (fp0); when present they override the simulated ones.
+  receivedDate?: string;
+  acceptedDate?: string;
 }
 
+export { default as fp0 } from './fp0';
 export { default as fp1 } from './fp1';
 export { default as fp2 } from './fp2';
 export { default as fp3 } from './fp3';

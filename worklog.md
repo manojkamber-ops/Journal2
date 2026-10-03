@@ -153,3 +153,22 @@ Work Log:
 
 Stage Summary:
 - Both submission forms now confirm success explicitly: Contact shows a persistent green "Submitted successfully ✓" panel with a reset action; Newsletter Join shows a persistent green inline confirmation under the form — in addition to the "Submitted successfully" toasts.
+
+---
+Task ID: 9
+Agent: Main agent (Super Z)
+Task: "Add as a first paper of a current issue" — integrate the uploaded manuscript (upload/Researchpaper.docx) as the FIRST paper of the current issue (Vol. 9, Issue 3, September 2026).
+
+Work Log:
+- Extracted the manuscript via pandoc + raw OOXML: title "The Role of Artificial Intelligence in the Hiring Process: Opportunities, Challenges, and Future Prospects"; 6 real authors (Aditya Raj [corr.], Shlok Patel, Chirag H. Patel, Palak Dipakbhai Patel, Jay I. Patel, Vivek Dave) of Parul Institute of Engineering and Technology (MCA), Parul University, Vadodara, India; 5 ORCIDs (Vivek Dave has none in the docx); 14 numbered sections; 1 table (Traditional vs AI hiring); 19 reference entries (entry 1 empty in the source -> renumbered to 18).
+- Created scripts/flagship/fp0.ts: faithful ASCII-safe PaperBlock[] conversion (115 blocks: 14 h2 sections, 25 h3 subsections, 6 lists, Table 1), full abstract, 7 index-term keywords, section "Artificial Intelligence & Machine Learning", type "Review Article", real manuscript dates (received 2026-04-18, accepted 2026-05-18 from docx metadata).
+- Extended FlagshipPaper interface with optional authors?: FlagshipAuthor[] and receivedDate/acceptedDate; export fp0 from scripts/flagship/index.ts.
+- seed.ts: FLAGSHIPS = [fp0, fp1..fp8] (fp0 first -> generation order == page order == display order); V9I3 slot count forced to >= FLAGSHIPS.length (value override only, no extra PRNG draw); real authors pushed into authorPool AFTER the prolific/iranians/internationals views so pickAuthor() never reuses them, with fixed IDs A9001-A9006; author pool draws still run for the flagship slot to keep the PRNG stream deterministic; correspondingEmail = aadityaraj201102@gmail.com; real dates override simulated ones.
+- Fixed a latent ordering bug exposed by this task: page ranges are strings, so "10-16" sorted BEFORE "1-9" (issue detail API and lists). Added src/lib/page-order.ts (startPage()/byStartPageAsc()); issue API now sorts by numeric start page in JS; /api/journal latestArticles fetches a 60-item window then sorts by (year desc, volume desc, issue desc, startPage asc) before slicing 6; /api/articles uses { id: 'asc' } as the within-issue tiebreaker (IDs zero-padded, generation order == page order).
+- article.tsx: ORCID chip now renders only when an author has an ORCID (Vivek Dave shows no empty chip).
+- Re-seeded: 260 articles (+1), 538 authors (+6 real), V9I3 = 9 papers.
+- Verified: uploaded paper = IJCS-2026-0247, pp. 1-11, 11 PDF pages (6-13 window respected journal-wide: zero <6, zero >13); issue API / home latestArticles list it first with authors "Aditya Raj*, Shlok Patel, ..."; PDF endpoint 200 (39 KB, 11 pages, correct header band with ISSN/OA/Scopus, all 6 authors with affiliation number, wrapping cleanly); article page shows all authors + Parul affiliation + 5 ORCID chips + 14-section TOC + Table 1 + corresponding email; references accordion opens with all 18 refs; screenshots audit/fp0-home-current-issue.png, fp0-issue-page.png, fp0-article-top.png, fp0-article-table2.png, fp0-article-mobile.png.
+- Regression: bun run lint clean; overflow-audit.sh 10 routes x 3 viewports => AUDIT_RESULT: ALL_CLEAN; zero browser page errors; mobile 390px no horizontal overflow.
+
+Stage Summary:
+- The uploaded author manuscript is now the FIRST paper of the current issue (Vol. 9, Issue 3, pp. 1-11, IJCS-2026-0247) with its real authors, ORCIDs, affiliation, manuscript dates, complete 14-section full text, Table 1 and 18 references — on-page and as an 11-page OA/Scopus-branded PDF. A latent string-sort page-ordering bug was fixed across the three list APIs. Site totals: 260 articles, 538 authors.

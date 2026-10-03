@@ -207,10 +207,12 @@ export function ArticleView({ id }: { id: string }) {
             </p>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
               {a.authorDetails.map(ad => (
-                <span key={`o-${ad.id}`} className="inline-flex items-center gap-1 text-zinc-500">
-                  <ExternalLink className="h-3 w-3 text-scopus" aria-hidden />
-                  <span className="font-mono">ORCID {ad.orcid}</span>
-                </span>
+                ad.orcid ? (
+                  <span key={`o-${ad.id}`} className="inline-flex items-center gap-1 text-zinc-500">
+                    <ExternalLink className="h-3 w-3 text-scopus" aria-hidden />
+                    <span className="font-mono">ORCID {ad.orcid}</span>
+                  </span>
+                ) : null
               ))}
             </div>
           </div>

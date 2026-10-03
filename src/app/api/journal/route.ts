@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import type { ArticleListItem, JournalOverview } from '@/lib/journal-types';
 import type { Prisma } from '@prisma/client';
+import { startPage } from '@/lib/page-order';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,8 +57,9 @@ export async function GET() {
       db.announcement.findMany({ orderBy: { date: 'desc' } }),
       db.article.findMany({
         where: { status: 'published' },
-        orderBy: [{ year: 'desc' }, { volume: 'desc' }, { issue: 'desc' }, { pages: 'asc' }],
-        take: 6,
+        // Wide window: re-sorted numerically below before slicing to 6.
+        orderBy: [{ year: 'desc' }, { volume: 'desc' }, { issue: 'desc' }],
+        take: 60,
         include: articleInclude,
       }),
       db.article.findMany({ where: { status: 'published' }, orderBy: { citations: 'desc' }, take: 5, include: articleInclude }),
@@ -100,7 +102,11 @@ export async function GET() {
             isSpecial: latestIssueDb.isSpecial, publishedDate: latestIssueDb.publishedDate,
           }
         : null,
-      latestArticles: latestArticles.map(toListItem),
+      latestArticles: latestArticles
+        .sort((x, y) =>
+          y.year - x.year || y.volume - x.volume || y.issue - x.issue || startPage(x.pages) - startPage(y.pages))
+        .slice(0, 6)
+        .map(toListItem),
       mostCited: mostCited.map(toListItem),
       mostDownloaded: mostDownloaded.map(toListItem),
       justAccepted: justAccepted.map(toListItem),

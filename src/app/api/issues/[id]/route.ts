@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { byStartPageAsc } from '@/lib/page-order';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,13 +10,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const issue = await db.issue.findUnique({ where: { id } });
     if (!issue) return NextResponse.json({ error: 'Issue not found' }, { status: 404 });
 
-    const articles = await db.article.findMany({
+    const found = await db.article.findMany({
       where: { volume: issue.volume, issue: issue.issue },
-      orderBy: [{ status: 'asc' }, { pages: 'asc' }],
+      orderBy: [{ status: 'asc' }],
       include: {
         authors: { orderBy: { order: 'asc' }, include: { author: true } },
       },
     });
+    // Sort by numeric start page (string sort would put "10-16" before "1-9").
+    const articles = [...found].sort(byStartPageAsc);
 
     return NextResponse.json({
       issue: {

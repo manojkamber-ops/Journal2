@@ -13,11 +13,16 @@ import {
 } from './seed-data';
 import { generateFullPaper, estimatePdfPages } from './paper-text';
 import { buildPaperPdf } from '../src/lib/pdf-render';
-import { fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8 } from './flagship/index';
+import { fp0, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8 } from './flagship/index';
 import type { FlagshipPaper } from './flagship/index';
 
 // Hand-written complete papers placed in the latest published issue (Vol. 9, No. 3).
-const FLAGSHIPS: FlagshipPaper[] = [fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8];
+// fp0 is the UPLOADED author manuscript (upload/Researchpaper.docx) and MUST be the
+// first element: within an issue, generation order == page order == display order.
+const FLAGSHIPS: FlagshipPaper[] = [fp0, fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8];
+
+// Fixed author IDs for the uploaded manuscript's real authors.
+const UPLOAD_AUTHOR_IDS = (fp0.authors ?? []).map((_, i) => `A9${String(i + 1).padStart(3, '0')}`);
 
 const db = new PrismaClient();
 
@@ -110,6 +115,18 @@ function pickAuthor(): PoolAuthor {
   if (chance(0.12) && internationals.length) return pick(internationals);
   if (chance(0.42)) return pick(prolific.filter(a => a.country === 'Iran').concat(prolific.filter(a => a.country !== 'Iran')));
   return pick(iranians);
+}
+
+// The uploaded manuscript's real authors join the Author table, but they are pushed
+// AFTER the prolific/iranians/internationals views are built so pickAuthor() never
+// selects them for other articles - they belong exclusively to fp0.
+if (fp0.authors) {
+  authorPool.push(...fp0.authors.map((fa, i) => ({
+    id: UPLOAD_AUTHOR_IDS[i],
+    givenName: fa.givenName, familyName: fa.familyName, orcid: fa.orcid,
+    affiliation: fa.affiliation, department: fa.department,
+    country: fa.country, email: fa.email,
+  })));
 }
 
 // ── Method acronym generator ─────────────────────────────────────────────────
@@ -321,7 +338,10 @@ async function main() {
       const isUpcoming = year === 2026 && iss === 4;
       if (year > 2026) continue;
       // journal growth: early volumes fewer articles
-      const perIssue = vol <= 2 ? rint(5, 6) : vol <= 4 ? rint(6, 7) : vol <= 6 ? rint(7, 8) : rint(8, 9);
+      let perIssue = vol <= 2 ? rint(5, 6) : vol <= 4 ? rint(6, 7) : vol <= 6 ? rint(7, 8) : rint(8, 9);
+      // The current issue carries all hand-written/uploaded flagship papers —
+      // make sure it has enough slots (value override only, no extra PRNG draw).
+      if (vol === 9 && iss === 3) perIssue = Math.max(perIssue, FLAGSHIPS.length);
       const upcoming = isUpcoming ? rint(4, 5) : 0;
       plans.push({ volume: vol, issue: iss, year, month, status: isUpcoming ? 'upcoming' : 'published', articles: isUpcoming ? upcoming : perIssue, isSpecial: !!SPECIAL_ISSUES[`${vol}-${iss}`] });
       if (!isUpcoming) publishedIssues.push({ vol, iss, year, month });
@@ -366,9 +386,10 @@ async function main() {
       const ctx = makeCtx(section);
       const abstractText = fp ? fp.abstractText : makeAbstract(ctx, section, type);
 
-      // authors 2–5
+      // authors 2–5 (pool draws always run to keep the PRNG stream stable;
+      // for papers with a real author list the result is overridden below)
       const nA = weightedPick([2, 3, 4, 5], [24, 40, 26, 10]);
-      const chosen: PoolAuthor[] = [];
+      let chosen: PoolAuthor[] = [];
       const seen = new Set<string>();
       for (let i = 0; i < nA; i++) {
         let a = pickAuthor();
@@ -378,6 +399,16 @@ async function main() {
       }
       const corrIdx = chance(0.88) ? 0 : rint(1, chosen.length - 1);
       const corr = chosen[corrIdx];
+      // Uploaded manuscript: use its real authors verbatim.
+      const realCorrIdx = fp?.authors ? fp.authors.findIndex(fa => fa.corresponding) : -1;
+      if (fp?.authors) {
+        chosen = fp.authors.map((fa, i) => ({
+          id: UPLOAD_AUTHOR_IDS[i],
+          givenName: fa.givenName, familyName: fa.familyName, orcid: fa.orcid,
+          affiliation: fa.affiliation, department: fa.department,
+          country: fa.country, email: fa.email,
+        }));
+      }
 
       articleNo++;
       const id = `IJCS-2026-${String(articleNo).padStart(4, '0')}`;
@@ -418,6 +449,9 @@ async function main() {
         citations = citationFor(plan.year, type);
         downloads = downloadsFor(plan.year, citations);
       }
+      // Uploaded manuscript dates override the simulated ones.
+      if (fp?.receivedDate) received = fp.receivedDate;
+      if (fp?.acceptedDate) accepted = fp.acceptedDate;
 
       articles.push({
         id, status: plan.status === 'upcoming' ? 'in_press' : 'published',
@@ -431,8 +465,8 @@ async function main() {
         nRefs,
         fullText,
         flagship: !!fp,
-        correspondingEmail: corr.email,
-        authorIds: chosen.map((a, i) => ({ id: a.id, corresponding: i === corrIdx })),
+        correspondingEmail: realCorrIdx >= 0 ? chosen[realCorrIdx].email : corr.email,
+        authorIds: chosen.map((a, i) => ({ id: a.id, corresponding: realCorrIdx >= 0 ? i === realCorrIdx : i === corrIdx })),
         authorsData: chosen,
       });
     }
