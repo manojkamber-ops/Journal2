@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArticleListItem } from '@/lib/journal-types';
 import { nav, fmtNum, truncate } from '@/lib/journal-client';
-import { FileText, Quote, Download, ChevronLeft, ChevronRight, Newspaper, Megaphone, Award, CalendarDays, ExternalLink } from 'lucide-react';
+import { FileText, Quote, Download, ChevronLeft, ChevronRight, Newspaper, Megaphone, Award, CalendarDays, ExternalLink, LockOpen } from 'lucide-react';
 
 // ── Journal logo ─────────────────────────────────────────────────────────────
 export function JournalLogo({ size = 44 }: { size?: number }) {
@@ -64,6 +64,23 @@ export function IndexBadge({ name }: { name: string }) {
     <span className="inline-flex items-center gap-1.5 rounded border border-zinc-300 bg-white px-2.5 py-1 text-[11px] font-bold tracking-wide text-zinc-700">
       <span className="h-1.5 w-1.5 rounded-full bg-scopus" aria-hidden />
       {name}
+    </span>
+  );
+}
+
+// ── Open Access publishing-model highlight (shown on every page) ─────────────
+export function OaBadge({ onDark = false, className = '' }: { onDark?: boolean; className?: string }) {
+  return (
+    <span
+      title="Publishing model: Open Access — every article is free to read, download and reuse under CC BY 4.0"
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded font-bold ${
+        onDark
+          ? 'bg-emerald-500 px-2 py-0.5 text-[11px] text-white'
+          : 'border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] uppercase tracking-wide text-emerald-700'
+      } ${className}`}
+    >
+      <LockOpen className="h-3 w-3 shrink-0" aria-hidden />
+      Publishing model: Open Access (OA)
     </span>
   );
 }

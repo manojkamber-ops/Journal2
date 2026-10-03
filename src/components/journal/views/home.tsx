@@ -4,7 +4,7 @@ import { useFetch, fmtNum, fmtDate } from '@/lib/journal-client';
 import type { JournalOverview } from '@/lib/journal-types';
 import {
   SectionHeading, ArticleRow, MiniArticle, MetricTile, AnnounceIcon,
-  ListSkeleton, BlockSkeleton, ErrorBox, IndexBadge,
+  ListSkeleton, BlockSkeleton, ErrorBox, IndexBadge, OaBadge,
 } from '../bits';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BookOpen, Upload, TrendingUp, Globe, Users, FileText, Download } from 'lucide-react';
@@ -46,6 +46,7 @@ export function HomeView() {
               major indexing databases.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
+              <OaBadge />
               <IndexBadge name="Scopus (2018–2026)" />
               <IndexBadge name="Web of Science ESCI" />
               <IndexBadge name="DOAJ" />

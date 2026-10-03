@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useFetch } from '@/lib/journal-client';
-import { ErrorBox, BlockSkeleton, SectionHeading } from '../bits';
+import { ErrorBox, BlockSkeleton, SectionHeading, OaBadge } from '../bits';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, BookOpen, Search } from 'lucide-react';
@@ -42,7 +42,10 @@ export function IssuesView() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
       <header className="border-b-2 border-crimson pb-3">
-        <p className="text-xs font-bold uppercase tracking-widest text-crimson">Archive</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-crimson">Archive</p>
+          <OaBadge />
+        </div>
         <h1 className="wordmark mt-1 text-3xl font-bold text-ink">Issues</h1>
         <p className="mt-1 text-sm text-zinc-500">All volumes of the journal, 2018–2026 (Volume 1–9).</p>
       </header>

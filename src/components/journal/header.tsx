@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { JournalLogo, IndexBadge } from './bits';
+import { JournalLogo, IndexBadge, OaBadge } from './bits';
 import { nav, Route } from '@/lib/journal-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,8 +45,9 @@ export function Header({ route }: { route: Route }) {
       {/* Utility bar */}
       <div className="bg-inkbar text-zinc-300">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-1.5 text-[11px] sm:px-6">
-          <p className="tracking-wide">An international peer-reviewed, open-access journal · Est. 2018</p>
-          <div className="flex items-center gap-3">
+          <p className="hidden tracking-wide md:block">An international peer-reviewed, open-access journal · Est. 2018</p>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <OaBadge onDark />
             <span className="hidden font-mono sm:inline">ISSN 2520-8438 · eISSN 2520-8446</span>
             <span className="inline-flex items-center gap-1.5 rounded bg-scopus/90 px-2 py-0.5 font-bold text-white">
               <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> Scopus Indexed
@@ -71,6 +72,7 @@ export function Header({ route }: { route: Route }) {
           </a>
           <div className="hidden shrink-0 flex-col items-end gap-2 lg:flex">
             <div className="flex items-center gap-2">
+              <OaBadge />
               <IndexBadge name="Scopus" />
               <IndexBadge name="ESCI" />
               <IndexBadge name="DOAJ" />

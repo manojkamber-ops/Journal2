@@ -9,6 +9,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
+import { OaBadge } from '../bits';
 import { Mail, MapPin, Clock, Send, Building2 } from 'lucide-react';
 
 export function ContactView() {
@@ -47,7 +48,10 @@ export function ContactView() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
       <header className="border-b-2 border-crimson pb-3">
-        <p className="text-xs font-bold uppercase tracking-widest text-crimson">Get in touch</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-crimson">Get in touch</p>
+          <OaBadge />
+        </div>
         <h1 className="wordmark mt-1 text-3xl font-bold text-ink">Contact</h1>
         <p className="mt-2 max-w-3xl text-sm text-zinc-500">
           Questions about a submission, review status, APC, or the journal in general — the editorial

@@ -2,7 +2,7 @@
 
 import { useFetch, fmtNum, fmtDate } from '@/lib/journal-client';
 import { ArticleDetail, PaperBlock } from '@/lib/journal-types';
-import { TypeBadge, ErrorBox, ListSkeleton, DoiLink } from '../bits';
+import { TypeBadge, ErrorBox, ListSkeleton, DoiLink, OaBadge } from '../bits';
 import { Button } from '@/components/ui/button';
 import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
@@ -224,7 +224,8 @@ export function ArticleView({ id }: { id: string }) {
                 <FileText className="h-3.5 w-3.5 text-crimson" aria-hidden /> DOI:
                 <DoiLink doi={a.doi} articleId={a.id} href={`/api/articles/${encodeURIComponent(a.id)}/pdf`} external className="!text-[12px]" />
               </span>
-              <span className="text-zinc-500">{a.pdfPages} pages · ~{readMin} min read · Open access</span>
+              <span className="text-zinc-500">{a.pdfPages} pages · ~{readMin} min read</span>
+              <OaBadge />
             </div>
             <a
               href={`/api/articles/${encodeURIComponent(a.id)}/pdf`}
@@ -325,8 +326,11 @@ export function ArticleView({ id }: { id: string }) {
             >
               <Download className="h-4 w-4" aria-hidden /> Download PDF
             </a>
+            <div className="mt-3 flex justify-center">
+              <OaBadge />
+            </div>
             <p className="mt-2 text-center text-[11px] text-zinc-400">
-              Open access · CC BY 4.0 · {a.pdfPages} pages
+              CC BY 4.0 · {a.pdfPages} pages
             </p>
           </section>
 

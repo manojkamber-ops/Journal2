@@ -61,3 +61,18 @@ Work Log:
 Stage Summary:
 - Site is fully responsive (mobile 390 / tablet 768 / desktop 1280, zero overflow) and every flow is browser-verified: navigation, search, DOI→paper, PDF, references, forms with DB persistence, sticky footer, correct Scopus-only branding.
 - Deliverable unchanged in architecture: Next.js 16 SPA at `/` with hash routing, Prisma/SQLite, pdf-lib PDFs; 259 complete papers, 6–9 pages each.
+
+---
+Task ID: 4
+Agent: Main agent (Super Z)
+Task: "Highlight this Publishing model Open Access (OA) in each pages of a website" — add a highlighted "Publishing model: Open Access (OA)" marker on every page.
+
+Work Log:
+- Created reusable `OaBadge` component in `src/components/journal/bits.tsx` (lucide `LockOpen` icon; light variant: emerald-50 bg / emerald-300 border / emerald-700 uppercase text for light areas; `onDark` variant: solid emerald-500 pill with white text for dark bars; tooltip explains CC BY 4.0 reuse).
+- Global placements (every page): header utility bar (dark, first item, always visible incl. mobile; the "open-access journal · Est. 2018" sentence hidden below md to avoid redundancy), desktop masthead badges row, footer bottom bar next to "Indexed in: Scopus 2018–2026".
+- Per-page placements: page-header kicker row of Articles, Issues, Issue detail, Editorial Board, For Authors, About, Contact (flex justify-between with OaBadge right); Home hero chips row (first, highlighted); Article page — DOI/access bar (next to page count) and sidebar "Access article" box (replaced plain "Open access" text with badge, keeping "CC BY 4.0 · N pages").
+- Note: innerText case-count initially confusing because light badges render text-transform:uppercase ("PUBLISHING MODEL: OPEN ACCESS (OA)") — verified via case-insensitive count that every route shows 3 visible highlights (utility bar + page header + footer), article page shows 4 (+ desktop masthead = 5 in DOM).
+- Verification: `bun run lint` clean; zero browser page errors; mobile 390px overflow re-check on home / article / for-authors / about — all "ok"; screenshots captured (desktop home, desktop article, mobile home) in audit/oa-*.png.
+
+Stage Summary:
+- Every page of the site now highlights "Publishing model: Open Access (OA)" via a consistent emerald-green lock-icon badge: header utility bar (all viewports), masthead (desktop), page titles, home hero, article access bar + sidebar, and footer.

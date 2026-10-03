@@ -8,6 +8,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Upload, CheckCircle2, Clock, ShieldCheck, Coins, FileCheck2, Users } from 'lucide-react';
+import { OaBadge } from '../bits';
 
 function H2({ id, children }: { id: string; children: string }) {
   return (
@@ -21,7 +22,10 @@ export function AuthorsView() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
       <header className="border-b-2 border-crimson pb-3">
-        <p className="text-xs font-bold uppercase tracking-widest text-crimson">Author resources</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-crimson">Author resources</p>
+          <OaBadge />
+        </div>
         <h1 className="wordmark mt-1 text-3xl font-bold text-ink">Submission Guidelines</h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-500">
           Thank you for considering the Iran Journal of Computer Science. Before submitting, please read these

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useFetch } from '@/lib/journal-client';
 import { ARTICLE_TYPES, SECTION_LIST } from '@/lib/journal-types';
-import { ArticleRow, Pager, ListSkeleton, ErrorBox } from '../bits';
+import { ArticleRow, Pager, ListSkeleton, ErrorBox, OaBadge } from '../bits';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -56,7 +56,10 @@ export function ArticlesView({ initialQuery, initialSection, initialSort, initia
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
       <header className="border-b-2 border-crimson pb-3">
-        <p className="text-xs font-bold uppercase tracking-widest text-crimson">Browse the journal</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-crimson">Browse the journal</p>
+          <OaBadge />
+        </div>
         <h1 className="wordmark mt-1 text-3xl font-bold text-ink">Articles</h1>
         <p className="mt-1 text-sm text-zinc-500">
           Search and filter every article published in IJCS since 2018.

@@ -1,7 +1,7 @@
 'use client';
 
 import { useFetch } from '@/lib/journal-client';
-import { ArticleRow, ErrorBox, ListSkeleton, SectionHeading } from '../bits';
+import { ArticleRow, ErrorBox, ListSkeleton, SectionHeading, OaBadge } from '../bits';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
@@ -35,9 +35,12 @@ export function IssueView({ id }: { id: string }) {
       </Button>
 
       <header className="border-b-2 border-crimson pb-5">
-        <p className="text-xs font-bold uppercase tracking-widest text-crimson">
-          {issue.status === 'upcoming' ? 'Forthcoming issue' : 'Journal issue'}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-crimson">
+            {issue.status === 'upcoming' ? 'Forthcoming issue' : 'Journal issue'}
+          </p>
+          <OaBadge />
+        </div>
         <h1 className="wordmark mt-1 text-3xl font-bold text-ink">
           Volume {issue.volume}, Issue {issue.issue} — {issue.month} {issue.year}
         </h1>

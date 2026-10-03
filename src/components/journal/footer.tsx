@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { JournalLogo } from './bits';
+import { JournalLogo, OaBadge } from './bits';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Mail } from 'lucide-react';
 
@@ -101,12 +101,13 @@ export function Footer() {
       <div className="border-t border-zinc-700/60">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-[12px] text-zinc-500 sm:flex-row sm:px-6">
           <p>© 2018–2026 Iran Journal of Computer Science. All articles licensed under CC BY 4.0.</p>
-          <p className="flex items-center gap-2">
+          <p className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-zinc-400">Indexed in:</span>
             <span className="inline-flex items-center gap-1.5 rounded bg-scopus/90 px-2 py-0.5 font-bold text-white">
               <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> Scopus
             </span>
             <span className="text-zinc-500">2018–2026</span>
+            <OaBadge onDark className="ml-1" />
           </p>
         </div>
       </div>

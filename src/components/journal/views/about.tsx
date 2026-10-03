@@ -2,7 +2,7 @@
 
 import { useFetch } from '@/lib/journal-client';
 import type { JournalOverview } from '@/lib/journal-types';
-import { ErrorBox, BlockSkeleton, IndexBadge } from '../bits';
+import { ErrorBox, BlockSkeleton, IndexBadge, OaBadge } from '../bits';
 import { BookOpen, Landmark, FileText, Globe2, ScrollText, ShieldCheck } from 'lucide-react';
 
 const H2 = ({ id, children }: { id: string; children: string }) => (
@@ -20,7 +20,10 @@ export function AboutView() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
       <header className="border-b-2 border-crimson pb-3">
-        <p className="text-xs font-bold uppercase tracking-widest text-crimson">About the journal</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-crimson">About the journal</p>
+          <OaBadge />
+        </div>
         <h1 className="wordmark mt-1 text-3xl font-bold text-ink">Iran Journal of Computer Science</h1>
       </header>
 
