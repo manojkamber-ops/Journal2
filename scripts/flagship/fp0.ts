@@ -20,6 +20,8 @@ const paper: FlagshipPaper = {
   ],
   receivedDate: '2026-04-18',
   acceptedDate: '2026-05-18',
+  publishedDate: '2026-10-16',
+  downloads: 0,
   blocks: [
     { kind: 'h2', text: '1. Introduction' },
     { kind: 'p', text: 'Hiring new employees has always been one of the most critical responsibilities of an organization. The workforce directly influences productivity, innovation, and competitive advantage, which makes the recruitment process strategically important. Yet, hiring is often time-consuming and resource-heavy. Large corporations regularly face thousands of applications for a single vacancy, which overwhelms recruiters and leads to inconsistencies. Traditional methods, such as manually reviewing resumes or relying on referrals, are prone to bias and limit the diversity of applicants considered.' },

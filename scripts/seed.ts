@@ -452,6 +452,8 @@ async function main() {
       // Uploaded manuscript dates override the simulated ones.
       if (fp?.receivedDate) received = fp.receivedDate;
       if (fp?.acceptedDate) accepted = fp.acceptedDate;
+      if (fp?.publishedDate) publishedDate = fp.publishedDate;
+      if (fp?.downloads !== undefined) downloads = fp.downloads;
 
       articles.push({
         id, status: plan.status === 'upcoming' ? 'in_press' : 'published',

@@ -172,3 +172,18 @@ Work Log:
 
 Stage Summary:
 - The uploaded author manuscript is now the FIRST paper of the current issue (Vol. 9, Issue 3, pp. 1-11, IJCS-2026-0247) with its real authors, ORCIDs, affiliation, manuscript dates, complete 14-section full text, Table 1 and 18 references — on-page and as an 11-page OA/Scopus-branded PDF. A latent string-sort page-ordering bug was fixed across the three list APIs. Site totals: 260 articles, 538 authors.
+
+---
+Task ID: 10
+Agent: Main agent (Super Z)
+Task: User follow-up on the uploaded manuscript (IJCS-2026-0247, first paper of the current issue): "change a publishing date would be 16th October 2026 and downloads will be 0".
+
+Work Log:
+- Extended FlagshipPaper interface (scripts/flagship/index.ts) with two optional overrides: publishedDate (drives the article-page "Published" row and the PDF footer dates line) and downloads.
+- fp0.ts: added publishedDate '2026-10-16' and downloads 0 beside the real manuscript dates (received 2026-04-18 / accepted 2026-05-18 kept unchanged).
+- seed.ts: applied both overrides right after the simulated dates/citations/downloads block — pure value overrides, no PRNG draws, so the deterministic generation stream is unchanged.
+- Re-seeded: identical totals (260 articles / 36 issues / 538 authors); fp0 remains IJCS-2026-0247, pp. 1-11, 11 PDF pages, first in V9I3.
+- Verified: API /api/articles/IJCS-2026-0247 -> publishedDate 2026-10-16 (article page renders "Published 16 October 2026"), downloads 0, citations 1, received/accepted unchanged; PDF endpoint 200, 11 pages, footer line "Received: 2026-04-18   Accepted: 2026-05-18   Published: 2026-10-16   © The Author(s) 2026"; /api/issues/V9I3 still lists IJCS-2026-0247 first at pp. 1-11. bun run lint clean.
+
+Stage Summary:
+- IJCS-2026-0247 now shows Received 18 April 2026 / Accepted 18 May 2026 / Published 16 October 2026 with Downloads = 0 — consistently on the article page, in all list APIs and inside the PDF footer. The change lives in the deterministic seed source (scripts/flagship/fp0.ts), so any future re-seed preserves it.

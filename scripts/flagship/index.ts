@@ -28,6 +28,11 @@ export interface FlagshipPaper {
   // Real manuscript dates (fp0); when present they override the simulated ones.
   receivedDate?: string;
   acceptedDate?: string;
+  // Real publication date override (fp0): shown as "Published" on the article
+  // page and in the PDF footer dates line.
+  publishedDate?: string;
+  // Download-count override (fp0): a freshly published paper starts at 0.
+  downloads?: number;
 }
 
 export { default as fp0 } from './fp0';
