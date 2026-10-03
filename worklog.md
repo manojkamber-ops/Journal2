@@ -107,3 +107,18 @@ Work Log:
 
 Stage Summary:
 - Browser tab favicon now shows the official journal cover on its own navy backdrop; the globe mark stays as the on-page logo, and the cover card remains in the homepage hero. Assets reproducible via scripts/make-brand-assets.py (final A = globe crop; cover navy = cover favicon).
+
+---
+Task ID: 6
+Agent: Main agent (Super Z)
+Task: "add the cover page as a favicon too" — use the full journal cover artwork as the site favicon (previously the favicon was the globe satellite crop).
+
+Work Log:
+- Wrote scripts/make-favicon-cover.py: builds square favicon sources from the full cover. Candidates generated and visually reviewed: crop120 / crop180 / crop240 (1087x1087 square crops at different y offsets) and "fit" (whole cover letterboxed on padded canvas).
+- Chose crop180 (y offset 180): full-bleed square containing globe + full title block + Vol/Issue row + ISSN + OA lock badge + green wave gradient; excludes the Springer wordmark (consistent with site's Scopus-only branding) and avoids padded side bars.
+- Regenerated src/app/favicon.ico (multi-size 16/32/48), src/app/icon.png (512x512 RGBA), src/app/apple-icon.png (180x180 RGBA) from the cover square; public/logo-mark.png (header/footer satellite mark) intentionally unchanged.
+- Legibility check: 48px preview resized up shows clearly readable title band, orange OA dot and green bottom gradient.
+- Verified: home 200; head links re-hashed (favicon.c8a317c3.ico / icon.60d9de1a.png / apple-icon.7c864d8e.png); browser network log shows tab request GET /favicon.ico?favicon.c8a317c3.ico -> 200; zero page errors; favicon renders in-browser (audit/favicon-cover-browser.png).
+
+Stage Summary:
+- The browser tab / bookmarks / iOS home screen now show the actual journal cover artwork as the favicon, while the header and footer continue to use the cover-derived satellite logo mark. All checks green.
