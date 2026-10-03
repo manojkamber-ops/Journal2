@@ -122,3 +122,18 @@ Work Log:
 
 Stage Summary:
 - The browser tab / bookmarks / iOS home screen now show the actual journal cover artwork as the favicon, while the header and footer continue to use the cover-derived satellite logo mark. All checks green.
+
+---
+Task ID: 7
+Agent: Main agent (Super Z)
+Task: "add as a Logo too" — use the full cover artwork as the site logo (completes the set: favicon done in Task 6, homepage hero cover card done in Task 5; this adds the cover to the header/footer logo mark).
+
+Work Log:
+- Rebuilt the header/footer logo mark from the same cover square (crop180, y offset 180) used for the favicon, so logo + favicon are visually identical brand assets.
+- Cache handling: next/image dev optimizer served a stale optimized variant of the old satellite logo (same filename logo-mark.png); fixed deterministically by renaming the asset to public/logo-cover.png and deleting the old file, then updating the JournalLogo component src.
+- Updated scripts/make-favicon-cover.py: restructured main block into candidates / logo / final modes; logo mode now writes public/logo-cover.png (256x256 RGBA).
+- Updated JournalLogo alt text to "IJCS logo — Iran Journal of Computer Science cover artwork" in src/components/journal/bits.tsx (single change updates header 52px and footer 40px).
+- Verified: /logo-cover.png 200; header + footer render the cover logo (browser screenshots audit/logo-cover-header2.png, audit/logo-cover-footer.png); mobile 390px no horizontal scroll, logo loaded; zero page errors; bun run lint clean.
+
+Stage Summary:
+- The uploaded official cover now serves as the brand everywhere: header masthead logo, footer logo, homepage hero "Current issue cover" card, and favicon/favicon-touch icons — one consistent cover-based identity across the site.

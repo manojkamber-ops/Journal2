@@ -40,6 +40,14 @@ if __name__ == '__main__':
             sq = square(n).resize((420, 420), Image.LANCZOS)
             sq.save(f'/home/z/my-project/scripts/fav-{n}.png')
             print(f'fav-{n}.png')
+    elif mode == 'logo':
+        # Rebuild public/logo-cover.png (header/footer logo mark) from the same
+        # cover square used for the favicon, so logo + favicon stay consistent.
+        name = sys.argv[2] if len(sys.argv) > 2 else 'crop180'
+        sq = square(name).convert('RGBA')
+        sq.resize((256, 256), Image.LANCZOS).save('/home/z/my-project/public/logo-cover.png', optimize=True)
+        import os
+        print('logo-cover.png', os.path.getsize('/home/z/my-project/public/logo-cover.png'), 'bytes (256x256 RGBA)')
     else:
         name = sys.argv[2]
         sq = square(name).convert('RGBA')

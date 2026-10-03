@@ -13,8 +13,8 @@ import { FileText, Quote, Download, ChevronLeft, ChevronRight, Newspaper, Megaph
 export function JournalLogo({ size = 44 }: { size?: number }) {
   return (
     <Image
-      src="/logo-mark.png"
-      alt="IJCS logo — satellite view of the Iran region from the journal cover"
+      src="/logo-cover.png"
+      alt="IJCS logo — Iran Journal of Computer Science cover artwork"
       width={size}
       height={size}
       priority
