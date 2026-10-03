@@ -40,3 +40,24 @@ Stage Summary:
 - Deliverable: every one of the 259 articles now opens as a COMPLETE research paper (full text on-page + 6-9 page PDF) with Introduction, Literature Review, Methodology, Experimental Setup, Results & Discussion, Conclusion and References; DOIs open papers; site branding is "Indexed in: Scopus".
 - Key files: `scripts/flagship/*` (8 hand-written papers), `scripts/paper-text.ts`, `scripts/seed.ts`, `src/lib/pdf-render.ts`, `src/app/api/articles/[id]/pdf/route.ts`, `src/app/api/articles/[id]/route.ts`, `src/components/journal/views/article.tsx`, `src/components/journal/bits.tsx`, header/footer/home/about/layout branding.
 - Re-seed anytime with `bun scripts/seed.ts` (deterministic, renders PDFs for exact page counts).
+
+---
+Task ID: 3
+Agent: Main agent (Super Z)
+Task: "Create a Responsive and check all the things" — full responsiveness guarantee + comprehensive end-to-end verification of every page, interaction and data flow of the IJCS journal website.
+
+Work Log:
+- Confirmed dev server healthy on port 3000 (old EADDRINUSE line in dev.log was a stale second-start attempt; live server responds 200).
+- `bun run lint` clean before and after audit work.
+- Wrote systematic responsive overflow audit (`scripts/overflow-audit.sh`): 10 routes (home, articles, articles?q=, article detail, issues, issue detail, editorial-board, for-authors, about, contact) × 3 viewports (390/768/1280 px) checking `documentElement.scrollWidth` plus wide-element detection. Result: ALL_CLEAN — zero horizontal overflow anywhere; tables live inside `overflow-x-auto` wrappers by design.
+- Visual QA screenshots captured to `audit/`: desktop home (hero + metrics), current-issue cards, article page (full paper), references accordion open, mobile home / menu / articles / paper / method section, tablet issues / issue detail / board / about.
+- Verified every paper renders the complete academic structure (Abstract, 1. Introduction, 2. Literature Review, 3. Methodology, 4. Experimental Setup, 5. Results and Discussion, 6. Conclusion, References) on BOTH flagship and template-generated papers (spot-checked IJCS-2026-0248: 3,072 words, 3 tables, 16 refs; IJCS-2026-0130: 2,788 words, 4 tables).
+- DB-wide integrity check: 259/259 articles have non-null fullText; PDF page counts 6–9 (inside the required 6–13 range). API `JSON.parse(a.fullText)` correctly handles the string-stored JSON blocks.
+- Interaction tests (all pass): DOI link click from listing → opens in-app full paper page (#/article/IJCS-2026-0248); article-page DOI → full-text PDF endpoint (200, application/pdf); references accordion expands; PDF endpoint valid; header search "federated learning" → 15 results; mobile hamburger menu opens/navigates/auto-closes; contact form submits and persists to SQLite; newsletter subscribe persists to SQLite; sticky footer verified (footer flush at document bottom, no gap/overlap).
+- Branding audit: zero "Springer" strings remain in src (renamed one CSS comment to "Academic wordmark"); "Indexed in: Scopus" + ISSN/eISSN present in utility bar, masthead, footer, about page; about page shows Print ISSN 2520-8438, eISSN 2520-8446, Scopus 2018–2026, Quarterly, Source type Journal.
+- Error sweep: zero browser page errors across the whole session; console shows only HMR/Fast-Refresh info; dev.log free of errors/warnings.
+- Housekeeping: removed audit test rows (1 contact message, 1 newsletter subscriber) from DB; deleted temporary check scripts; kept `scripts/overflow-audit.sh` for future regression runs.
+
+Stage Summary:
+- Site is fully responsive (mobile 390 / tablet 768 / desktop 1280, zero overflow) and every flow is browser-verified: navigation, search, DOI→paper, PDF, references, forms with DB persistence, sticky footer, correct Scopus-only branding.
+- Deliverable unchanged in architecture: Next.js 16 SPA at `/` with hash routing, Prisma/SQLite, pdf-lib PDFs; 259 complete papers, 6–9 pages each.
