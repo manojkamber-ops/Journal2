@@ -40,6 +40,11 @@ const R = () => rnd();
 const pick = <T,>(arr: T[]): T => arr[Math.floor(R() * arr.length)];
 const rint = (min: number, max: number) => Math.floor(R() * (max - min + 1)) + min;
 const chance = (p: number) => R() < p;
+// Dedicated PRNG for the current issue's per-paper publication dates — drawing
+// from the main stream here would shift every later draw and change the whole
+// journal's generated content. This stream only feeds the publication days.
+const dateRnd = mulberry32(20260916);
+const dateRint = (min: number, max: number) => Math.floor(dateRnd() * (max - min + 1)) + min;
 function weightedPick<T>(items: T[], weights: number[]): T {
   const total = weights.reduce((a, b) => a + b, 0);
   let v = R() * total;
@@ -352,6 +357,8 @@ async function main() {
   const articles: GenArticle[] = [];
   let articleNo = 0;
   let flagshipIdx = 0;
+  // Distinct random publication days for the current issue's papers (see below).
+  const usedPubDays = new Set<number>();
 
   for (const plan of plans) {
     const special = SPECIAL_ISSUES[`${plan.volume}-${plan.issue}`];
@@ -437,7 +444,19 @@ async function main() {
       let citations = 0, downloads = 0;
 
       if (plan.status === 'published') {
-        publishedDate = pubDateBase;
+        if (plan.volume === 9 && plan.issue === 3) {
+          // Current issue: each paper gets its own distinct random publication
+          // day within the issue month (September — 30 days) instead of one
+          // shared date. Day 26 (the old shared default) is excluded so no
+          // paper appears unchanged. fp0 overrides this with its real date below.
+          let day = dateRint(1, 30);
+          let guard = 0;
+          while ((usedPubDays.has(day) || day === 26) && guard++ < 200) day = dateRint(1, 30);
+          usedPubDays.add(day);
+          publishedDate = iso(plan.year, MONTH_NUM[plan.month], day);
+        } else {
+          publishedDate = pubDateBase;
+        }
         const mN = MONTH_NUM[plan.month];
         // received 4-8 months before publication
         let rM = mN - rint(4, 8), rY = plan.year;

@@ -200,3 +200,18 @@ Work Log:
 
 Stage Summary:
 - Confirmed live: the paper's page shows exactly the four requested values (Received 18 April 2026 / Accepted 18 May 2026 / Published 16 October 2026 / Downloads 0) and nothing else on the paper changed. State is persisted in the deterministic seed (scripts/flagship/fp0.ts) and survives re-seeds.
+
+---
+Task ID: 12
+Agent: Main agent (Super Z)
+Task: "for the remaining papers change to randomly dates for Published 26 September 2026" — give the remaining papers of the current issue (IJCS-2026-0248..0255, which all shared "Published 26 September 2026") their own random publication dates, keeping fp0's 16 October 2026.
+
+Work Log:
+- Snapshot tooling: scripts/dump-pubdates.ts dumps all 260 (id, publishedDate) rows (note: Prisma query logging prefixes stdout — parse only the line starting with '['); saved before/after snapshots to tool-results/pubdates-{before,after2}.json.
+- seed.ts: added a DEDICATED mulberry32 stream (dateRnd, seed 20260916) + dateRint helper so per-paper date draws never touch the main PRNG stream — verified by diff that all 252 non-V9I3 rows stayed byte-identical after re-seed. Added usedPubDays Set in main(); V9I3 published papers now draw a distinct random day within September 2026 (1-30, day 26 excluded so no paper keeps the old shared default).
+- First re-seed exposed a perception edge: 0250 randomly drew day 26 (= old shared date) — added the day-26 exclusion and re-seeded.
+- Final result (diff vs before): exactly 8 rows changed — 0248→09-17, 0249→09-18, 0250→09-30, 0251→09-04, 0252→09-06, 0253→09-07, 0254→09-21, 0255→09-09; all distinct, all September 2026, none on the 26th; fp0 stays 2026-10-16.
+- Verified: received <= accepted < published for all 8 (API); V9I3 still 9 papers with IJCS-2026-0247 first at pp. 1-11; PDF of 0248 footer shows "Published: 2026-09-17" (9 pages, 200); bun run lint clean.
+
+Stage Summary:
+- The current issue's 8 remaining papers now each display a distinct random publication date in September 2026 instead of the shared "26 September 2026", while the uploaded manuscript keeps 16 October 2026 and every other article/issue in the journal is unchanged. Randomization lives in the deterministic seed (dedicated PRNG stream), so re-seeds reproduce it exactly.
