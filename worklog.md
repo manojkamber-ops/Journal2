@@ -187,3 +187,16 @@ Work Log:
 
 Stage Summary:
 - IJCS-2026-0247 now shows Received 18 April 2026 / Accepted 18 May 2026 / Published 16 October 2026 with Downloads = 0 — consistently on the article page, in all list APIs and inside the PDF footer. The change lives in the deterministic seed source (scripts/flagship/fp0.ts), so any future re-seed preserves it.
+
+---
+Task ID: 11
+Agent: Main agent (Super Z)
+Task: User re-confirmed for the uploaded manuscript ("The Role of Artificial Intelligence in the Hiring Process: Opportunities, Challenges, and Future Prospects", Aditya Raj* et al., Parul University): "in this paper only update the Received 18 April 2026 / Accepted 18 May 2026 / Published 16 October 2026 / Downloads 0".
+
+Work Log:
+- No code change required — Task ID 10 already placed the DB and seed source in exactly this state; ran a full re-verification instead.
+- API /api/articles/IJCS-2026-0247: receivedDate 2026-04-18, acceptedDate 2026-05-18, publishedDate 2026-10-16, downloads 0; title, 6-author list with Aditya Raj corresponding, and corresponding email aadityaraj201102@gmail.com match the user's quoted header block verbatim.
+- Browser E2E on #/article/IJCS-2026-0247: rendered innerText contains "18 April 2026", "18 May 2026", "16 October 2026", Downloads 0, corresponding email and Parul affiliation (7/7 checks true); zero page errors; console shows only dev HMR notices; screenshots audit/fp0-dates-updated.png (dates block) and audit/fp0-header-confirmed.png (title block).
+
+Stage Summary:
+- Confirmed live: the paper's page shows exactly the four requested values (Received 18 April 2026 / Accepted 18 May 2026 / Published 16 October 2026 / Downloads 0) and nothing else on the paper changed. State is persisted in the deterministic seed (scripts/flagship/fp0.ts) and survives re-seeds.
