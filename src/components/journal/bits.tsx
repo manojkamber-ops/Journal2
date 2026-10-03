@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode, useState } from 'react';
+import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,27 +12,14 @@ import { FileText, Quote, Download, ChevronLeft, ChevronRight, Newspaper, Megaph
 // ── Journal logo ─────────────────────────────────────────────────────────────
 export function JournalLogo({ size = 44 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="IJCS logo" className="shrink-0">
-      <circle cx="32" cy="32" r="30" fill="#b00d1e" />
-      <circle cx="32" cy="32" r="30" fill="none" stroke="#8f0a18" strokeWidth="2" />
-      {/* network motif */}
-      <g stroke="#ffffff" strokeWidth="1.6" opacity="0.95">
-        <line x1="32" y1="14" x2="18" y2="34" />
-        <line x1="32" y1="14" x2="46" y2="34" />
-        <line x1="18" y1="34" x2="26" y2="50" />
-        <line x1="46" y1="34" x2="38" y2="50" />
-        <line x1="18" y1="34" x2="46" y2="34" />
-        <line x1="26" y1="50" x2="38" y2="50" />
-      </g>
-      <g fill="#ffffff">
-        <circle cx="32" cy="14" r="4.4" />
-        <circle cx="18" cy="34" r="3.4" />
-        <circle cx="46" cy="34" r="3.4" />
-        <circle cx="26" cy="50" r="3.4" />
-        <circle cx="38" cy="50" r="3.4" />
-      </g>
-      <circle cx="32" cy="32" r="5" fill="#f8b92e" stroke="#ffffff" strokeWidth="1.4" />
-    </svg>
+    <Image
+      src="/logo-mark.png"
+      alt="IJCS logo — satellite view of the Iran region from the journal cover"
+      width={size}
+      height={size}
+      priority
+      className="shrink-0 rounded-md shadow-sm ring-1 ring-zinc-300"
+    />
   );
 }
 

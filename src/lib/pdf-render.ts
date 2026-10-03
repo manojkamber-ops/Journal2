@@ -91,10 +91,12 @@ export async function buildPaperPdf(a: PaperRenderInput): Promise<{ bytes: Uint8
   const bandH = 74;
   page.drawRectangle({ x: 0, y: PAGE_H - bandH, width: PAGE_W, height: bandH, color: CRIMSON });
   page.drawText('Iran Journal of Computer Science', { x: M, y: PAGE_H - 34, size: 17, font: helvB, color: rgb(1, 1, 1) });
-  page.drawText(`ISSN 2520-8438 / eISSN 2520-8446  |  Indexed in: Scopus  |  Vol. ${a.volume}, No. ${a.issue}, ${a.month} ${a.year}, pp. ${sanitize(a.pages) || 'Article in press'}`, {
+  page.drawText('ISSN 2520-8438 / eISSN 2520-8446  |  Publishing model: Open Access (OA)  |  Indexed in: Scopus', {
     x: M, y: PAGE_H - 52, size: 8.5, font: helvR, color: rgb(1, 0.92, 0.92),
   });
-  page.drawText(`https://doi.org/${sanitize(a.doi)}`, { x: M, y: PAGE_H - 65, size: 8.5, font: helvR, color: rgb(1, 0.92, 0.92) });
+  page.drawText(`Vol. ${a.volume}, No. ${a.issue}, ${a.month} ${a.year}, pp. ${sanitize(a.pages) || 'Article in press'}  |  https://doi.org/${sanitize(a.doi)}`, {
+    x: M, y: PAGE_H - 65, size: 8.5, font: helvR, color: rgb(1, 0.92, 0.92),
+  });
   y = PAGE_H - bandH - 30;
 
   const drawFooter = (p: typeof page, num: number) => {

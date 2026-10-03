@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useFetch, fmtNum, fmtDate } from '@/lib/journal-client';
 import type { JournalOverview } from '@/lib/journal-types';
 import {
@@ -62,34 +63,24 @@ export function HomeView() {
             </div>
           </div>
 
-          {/* Metrics panel */}
-          <aside className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Journal metrics · 2025</h3>
-            <div className="mt-3 flex items-end gap-3">
-              <div className="text-5xl font-bold text-scopus">{m.citeScore.toFixed(1)}</div>
-              <div className="pb-1.5">
-                <div className="text-sm font-bold text-ink">CiteScore (Scopus)</div>
-                <div className="text-xs text-zinc-500">{m.quartile} · {m.percentile}th percentile · CS Applications</div>
-              </div>
-            </div>
-            {/* CiteScore history bars */}
-            <div className="mt-4 flex h-20 items-end gap-2" role="img" aria-label="CiteScore history from 2020 to 2025 rising from 1.2 to 4.6">
-              {m.citeScoreHistory.map(h => (
-                <div key={h.year} className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[10px] font-semibold text-zinc-500">{h.value}</span>
-                  <div
-                    className="w-full rounded-t bg-scopus/80"
-                    style={{ height: `${Math.max(8, (h.value / maxHistory) * 52)}px` }}
-                  />
-                  <span className="text-[10px] text-zinc-400">{h.year}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <MetricTile label="SJR 2024" value={m.sjr.toFixed(2)} sub="Q2" />
-              <MetricTile label="SNIP" value={m.snip.toFixed(2)} sub="Source-normalized" />
-              <MetricTile label="h-index" value={m.hIndex} sub="Scopus" />
-              <MetricTile label="Downloads" value="148K" sub="in 2025" accent />
+          {/* Current issue cover (official journal artwork) */}
+          <aside className="mx-auto w-full max-w-[280px]">
+            <div className="rounded-xl border border-zinc-200 bg-white p-3 shadow-sm">
+              <Image
+                src="/cover-vol9.webp"
+                alt="Iran Journal of Computer Science — current issue cover, Volume 9, Issue 3, September 2026"
+                width={520}
+                height={692}
+                priority
+                className="w-full rounded-lg"
+              />
+              <p className="mt-3 text-center text-[11px] font-bold uppercase tracking-wider text-zinc-500">Current issue cover</p>
+              <p className="mt-0.5 text-center text-xs font-semibold text-ink">
+                Vol. {li?.volume ?? 9} · Issue {li?.issue ?? 3} · {li ? `${li.month} ${li.year}` : 'September 2026'}
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-3 w-full border-zinc-300 gap-1.5">
+                <a href={`#/issue/${li?.id ?? ''}`}>Browse this issue <ArrowRight className="h-3.5 w-3.5" aria-hidden /></a>
+              </Button>
             </div>
           </aside>
         </div>
@@ -142,6 +133,37 @@ export function HomeView() {
               <a href="#/about" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-crimson hover:underline">
                 Journal news &amp; indexing <ArrowRight className="h-3 w-3" aria-hidden />
               </a>
+            </section>
+
+            {/* Journal metrics · 2025 */}
+            <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Journal metrics · 2025</h3>
+              <div className="mt-3 flex items-end gap-3">
+                <div className="text-5xl font-bold text-scopus">{m.citeScore.toFixed(1)}</div>
+                <div className="pb-1.5">
+                  <div className="text-sm font-bold text-ink">CiteScore (Scopus)</div>
+                  <div className="text-xs text-zinc-500">{m.quartile} · {m.percentile}th percentile · CS Applications</div>
+                </div>
+              </div>
+              {/* CiteScore history bars */}
+              <div className="mt-4 flex h-20 items-end gap-2" role="img" aria-label="CiteScore history from 2020 to 2025 rising from 1.2 to 4.6">
+                {m.citeScoreHistory.map(h => (
+                  <div key={h.year} className="flex flex-1 flex-col items-center gap-1">
+                    <span className="text-[10px] font-semibold text-zinc-500">{h.value}</span>
+                    <div
+                      className="w-full rounded-t bg-scopus/80"
+                      style={{ height: `${Math.max(8, (h.value / maxHistory) * 52)}px` }}
+                    />
+                    <span className="text-[10px] text-zinc-400">{h.year}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <MetricTile label="SJR 2024" value={m.sjr.toFixed(2)} sub="Q2" />
+                <MetricTile label="SNIP" value={m.snip.toFixed(2)} sub="Source-normalized" />
+                <MetricTile label="h-index" value={m.hIndex} sub="Scopus" />
+                <MetricTile label="Downloads" value="148K" sub="in 2025" accent />
+              </div>
             </section>
 
             {/* For authors CTA */}

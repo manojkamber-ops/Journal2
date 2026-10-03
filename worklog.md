@@ -76,3 +76,20 @@ Work Log:
 
 Stage Summary:
 - Every page of the site now highlights "Publishing model: Open Access (OA)" via a consistent emerald-green lock-icon badge: header utility bar (all viewports), masthead (desktop), page titles, home hero, article access bar + sidebar, and footer.
+
+---
+Task ID: 5
+Agent: Main agent (Super Z)
+Task: "Use this as a logo and make sure that use as a favicon too" — integrate the uploaded official cover (upload/Iran Journal of Computer Science Cover.png, 1087x1447) as the site logo and favicon.
+
+Work Log:
+- Wrote scripts/make-brand-assets.py: crops the globe/Middle-East satellite region (box 0,0,480,480 — avoids Springer wordmark top-right and title band; candidate crops A-E generated and visually reviewed) and emits: public/logo-mark.png (256x256 RGBA), src/app/favicon.ico (multi-size 16/32/48, RGBA), src/app/icon.png (512x512 RGBA), src/app/apple-icon.png (180x180 RGBA), public/cover-vol9.webp (520x692).
+- Fixed a Next.js/Turbopack hard failure: favicon.ico saved by PIL as RGB triggered "Processing image failed — The PNG is not in RGBA format!" and the whole homepage 500'd; regenerated all icons as RGBA (site back to 200).
+- Replaced the placeholder SVG JournalLogo in src/components/journal/bits.tsx with next/image rendering /logo-mark.png (rounded-md + ring + shadow); header masthead (52px) and footer (40px) pick it up automatically.
+- Homepage hero right column now shows the official journal cover card (next/image, priority, w-full rounded) with caption "Current issue cover — Vol. 9 · Issue 3 · September 2026" and "Browse this issue" button; the Journal-metrics panel was moved intact into the home sidebar (after Announcements, before For Authors CTA) to keep the hero balanced.
+- PDF header band updated in src/lib/pdf-render.ts: line 2 now "ISSN / eISSN | Publishing model: Open Access (OA) | Indexed in: Scopus", line 3 "Vol., No., month year, pp. | https://doi.org/..." — both lines width-measured via pdf-lib (371.7 / 329.1 pt vs 483.3 max); verified in a generated 7-page PDF via pypdf.
+- Metadata icons verified in HTML head: link rel=icon (favicon.ico 48x48), link rel=icon (icon.png 512x512), link rel=apple-touch-icon (apple-icon.png 180x180); /favicon.ico 200 image/x-icon.
+- Regression: bun run lint clean; overflow-audit.sh across 10 routes x 3 viewports (390/768/1280) => AUDIT_RESULT: ALL_CLEAN; agent-browser checks at 1280 and 390 — no horizontal scroll, logo + cover images loaded (naturalWidth>0), zero console errors; screenshots audit/logo-desktop-home.png, audit/logo-mobile-home.png, audit/logo-mobile-cover.png, audit/favicon-in-browser.png.
+
+Stage Summary:
+- The uploaded official cover now brands the whole site: satellite logo mark in header/footer + favicon (16/32/48 ICO, 512 icon, 180 apple-touch), full cover displayed as the hero "Current issue cover" card on the homepage; article PDFs carry the OA + Scopus band. All audits green.
