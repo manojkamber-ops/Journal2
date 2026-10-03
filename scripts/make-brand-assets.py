@@ -9,8 +9,10 @@ Produces (final mode):
   public/cover-vol9.webp    full cover, 520px wide (homepage hero)
 
 Usage:
-  python3 make-brand-assets.py candidates   # dump crop candidates for review
-  python3 make-brand-assets.py final B      # build final assets using crop B
+  python3 make-brand-assets.py candidates        # dump crop candidates for review
+  python3 make-brand-assets.py final A           # build final assets using globe crop A
+  python3 make-brand-assets.py coverpreviews     # dump square cover-icon variants for review
+  python3 make-brand-assets.py cover navy        # favicon/apple/icon from the FULL COVER (square, contained)
 """
 import sys
 from PIL import Image
@@ -36,6 +38,42 @@ def gen_candidates():
         c.save(f'/home/z/my-project/scripts/crop-{name}.png')
         print(f'crop-{name}.png  box={box}')
 
+def save_icon_set(rgba512):
+    """Write favicon.ico (16/32/48), icon.png (512) and apple-icon.png (180) from a 512 RGBA source."""
+    rgba512.save(f'{OUT_APP}/icon.png', optimize=True)                      # 512
+    rgba512.resize((180, 180), Image.LANCZOS).save(f'{OUT_APP}/apple-icon.png', optimize=True)
+    rgba512.save(f'{OUT_APP}/favicon.ico', sizes=[(16, 16), (32, 32), (48, 48)])
+
+def cover_square(bg_rgb, pad=0.04):
+    """Full cover contained in a square canvas, vertically near-full-bleed."""
+    im = Image.open(SRC).convert('RGB')
+    S = 512
+    canvas = Image.new('RGBA', (S, S), tuple(bg_rgb) + (255,))
+    h = int(S * (1 - pad * 2))
+    w = round(im.width * h / im.height)          # ~0.751 * h
+    c = im.resize((w, h), Image.LANCZOS)
+    canvas.paste(c, ((S - w) // 2, (S - h) // 2))
+    return canvas
+
+# Backgrounds sampled to harmonise with the cover (navy = cover's own deep space blue)
+COVER_BGS = {
+    'navy': (7, 32, 66),
+    'white': (255, 255, 255),
+    'ink': (17, 24, 39),
+}
+
+def gen_cover_previews():
+    for name, bg in COVER_BGS.items():
+        cover_square(bg).resize((256, 256), Image.LANCZOS).save(f'/home/z/my-project/scripts/covericon-{name}.png')
+        print(f'covericon-{name}.png  bg={bg}')
+
+def build_cover(bg_name):
+    icon = cover_square(COVER_BGS[bg_name]).convert('RGBA')  # RGBA required by Next ICO/PNG decoder
+    save_icon_set(icon)
+    import os
+    for p in ['favicon.ico', 'icon.png', 'apple-icon.png']:
+        print(p, os.path.getsize(os.path.join(OUT_APP, p)), 'bytes')
+
 def build(name):
     box = CROPS[name]
     im = Image.open(SRC).convert('RGB')
@@ -47,9 +85,7 @@ def build(name):
     rgba.resize((256, 256), Image.LANCZOS).save(f'{OUT_PUBLIC}/logo-mark.png', optimize=True)
 
     # Favicon + metadata icons
-    rgba.save(f'{OUT_APP}/icon.png', optimize=True)                      # 512
-    rgba.resize((180, 180), Image.LANCZOS).save(f'{OUT_APP}/apple-icon.png', optimize=True)
-    rgba.save(f'{OUT_APP}/favicon.ico', sizes=[(16, 16), (32, 32), (48, 48)])
+    save_icon_set(rgba)
 
     # Full cover for the homepage hero
     cover_w = 520
@@ -72,5 +108,9 @@ if __name__ == '__main__':
     mode = sys.argv[1] if len(sys.argv) > 1 else 'candidates'
     if mode == 'candidates':
         gen_candidates()
+    elif mode == 'coverpreviews':
+        gen_cover_previews()
+    elif mode == 'cover':
+        build_cover(sys.argv[2] if len(sys.argv) > 2 else 'navy')
     else:
         build(sys.argv[2] if len(sys.argv) > 2 else 'B')

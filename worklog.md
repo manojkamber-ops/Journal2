@@ -93,3 +93,17 @@ Work Log:
 
 Stage Summary:
 - The uploaded official cover now brands the whole site: satellite logo mark in header/footer + favicon (16/32/48 ICO, 512 icon, 180 apple-touch), full cover displayed as the hero "Current issue cover" card on the homepage; article PDFs carry the OA + Scopus band. All audits green.
+
+---
+Task ID: 6
+Agent: Main agent (Super Z)
+Task: "add the cover page as a favicon too" — make the full journal cover (not just the globe crop) the browser-tab favicon.
+
+Work Log:
+- Extended scripts/make-brand-assets.py with a square cover-icon pipeline: cover_square() contains the full 1087x1447 cover inside a 512x512 canvas (96% height, centered, side bars filled with a navy sampled from the cover's own deep space blue so edges blend); save_icon_set() helper now shared by both pipelines; added 'coverpreviews' and 'cover' CLI modes.
+- Generated and visually compared navy / white / ink background variants; navy chosen (no harsh white box in tabs, cover edges blend seamlessly).
+- Regenerated from the FULL COVER: src/app/favicon.ico (multi-size 16/32/48, RGBA), src/app/icon.png (512x512 RGBA), src/app/apple-icon.png (180x180 RGBA). public/logo-mark.png (globe crop) intentionally unchanged — it remains the header/footer logo mark.
+- Verified: /favicon.ico, /icon.png, /apple-icon.png all 200 with fresh build hashes in HTML head (favicon.a3a839f4 / icon.b9ace983 / apple-icon.4a59e61b); homepage 200; favicon rendered in a real browser (audit/favicon-cover-browser.png) showing the cover art at tab size; no horizontal scroll; zero page errors.
+
+Stage Summary:
+- Browser tab favicon now shows the official journal cover on its own navy backdrop; the globe mark stays as the on-page logo, and the cover card remains in the homepage hero. Assets reproducible via scripts/make-brand-assets.py (final A = globe crop; cover navy = cover favicon).
